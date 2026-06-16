@@ -40,7 +40,7 @@ static void draw_footer(const char* text) {
     vga_write_at(38, 24, "A About", 0x3A);
     vga_write_at(49, 24, "R Reboot", 0x3C);
     vga_write_at(61, 24, "P Shutdown", 0x3C);
-    vga_write_at(73, 24, "G", 0x3D);
+    vga_write_at(73, 24, "M Games", 0x3D);
     if (text) vga_write_at(68, 1, text, 0x1E);
 }
 
@@ -90,6 +90,7 @@ void desktop_draw() {
     draw_icon(5, 12, "G", ".*.", "***", "Galaxy", 0x1D);
     draw_icon(18, 12, "R", "[>>", " >>", "Reboot", 0x1C);
     draw_icon(31, 12, "P", "[--", " --", "Power", 0x1C);
+    draw_icon(44, 12, "M", "[<>]", "PLAY", "Games", 0x1D);
 
     box(64, 9, 14, 9, " Status ", 0x1A);
     vga_write_at(66, 11, "Kernel OK", 0x1A);
@@ -156,6 +157,21 @@ static void galaxy_app() {
     vga_write_at(25, 14, "Press ESC to return.", 0x1E);
 }
 
+
+static void games_app() {
+    vga_clear(0x1F);
+    vga_write_at(2, 1, "NovaOS / Games", 0x1E);
+    box(2, 3, 74, 17, " Games Launcher ", 0x1E);
+    vga_write_at(4, 5, "Games are planned as TencleLang apps.", 0x1F);
+    vga_write_at(4, 7, "Folder:", 0x1A);
+    vga_write_at(13, 7, "/games", 0x1B);
+    vga_write_at(4, 9, "Try in Terminal:", 0x1E);
+    vga_write_at(6, 11, "cd /", 0x1F);
+    vga_write_at(6, 12, "cd games", 0x1F);
+    vga_write_at(6, 13, "tlrun hello_game.tlang", 0x1F);
+    vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
+}
+
 static void settings_app() {
     vga_clear(0x1F);
     vga_write_at(2, 1, "NovaOS / Settings", 0x1E);
@@ -210,6 +226,7 @@ static char icon_at(int x, int y) {
     if (inside_rect(x, y, 5, 12, 10, 5)) return 'g';
     if (inside_rect(x, y, 18, 12, 10, 5)) return 'r';
     if (inside_rect(x, y, 31, 12, 10, 5)) return 'p';
+    if (inside_rect(x, y, 44, 12, 10, 5)) return 'm';
     return 0;
 }
 
@@ -231,6 +248,10 @@ static void open_desktop_action(char action) {
         desktop_redraw();
     } else if (action == 'a' || action == 'A') {
         about_app();
+        wait_escape_then_desktop();
+        desktop_redraw();
+    } else if (action == 'm' || action == 'M') {
+        games_app();
         wait_escape_then_desktop();
         desktop_redraw();
     } else if (action == 'r' || action == 'R') {

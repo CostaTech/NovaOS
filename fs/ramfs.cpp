@@ -99,21 +99,35 @@ void ramfs_init(void) {
     make_entry(0, "apps", 1, "");
     make_entry(0, "home", 1, "");
     make_entry(0, "docs", 1, "");
+    make_entry(0, "games", 1, "");
+    make_entry(0, "images", 1, "");
     make_entry(0, "readme.txt", 0, "NovaOS RAM filesystem is active. Type help in Terminal.");
 
     int docs = find_child(0, "docs");
     int home = find_child(0, "home");
     int apps = find_child(0, "apps");
+    int games = find_child(0, "games");
+    int images = find_child(0, "images");
     if (docs >= 0) {
-        make_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech and Andryx.");
-        make_entry(docs, "lnp.txt", 0, "LNP will be the NovaOS image format: .lnp");
+        make_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech.");
+        make_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo demo.lnp for metadata.");
+        make_entry(docs, "tencle.txt", 0, "TencleLang inside NovaOS uses: int << func >>(\"text\")");
+        make_entry(docs, "games.txt", 0, "Games will be launched from /games and written in TencleLang.");
     }
     if (home >= 0) make_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
     if (apps >= 0) {
         make_entry(apps, "terminal.app", 0, "Terminal app entry.");
         make_entry(apps, "files.app", 0, "File manager entry.");
         make_entry(apps, "editor.app", 0, "NovaEdit entry.");
+        make_entry(apps, "games.app", 0, "Games launcher entry.");
         make_entry(apps, "hello.tlang", 0, "int << func >>(\"Hello from TencleLang inside NovaOS\")");
+    }
+    if (games >= 0) {
+        make_entry(games, "hello_game.tlang", 0, "int << func >>(\"Nova Games will run TencleLang apps\")");
+        make_entry(games, "README.txt", 0, "Put future TencleLang games here.");
+    }
+    if (images >= 0) {
+        make_entry(images, "demo.lnp", 0, "LNP1 64 36 RGB demo placeholder");
     }
 }
 

@@ -109,6 +109,7 @@ static void print_help_fs() {
     help_line("mkdir <name>", "create a folder in RAM");
     help_line("create <name> [text]", "create a file in RAM");
     help_line("cat <name>", "read a file");
+    help_line("lnpinfo <file>", "show Nova Picture metadata");
     help_line("edit <name>", "open a one-line editor");
     help_line("rename <old> <new>", "rename a file or folder");
     help_line("rm <name>", "remove a file or empty folder");
@@ -133,6 +134,7 @@ static void print_help_apps() {
     help_line("S", "Settings app");
     help_line("A", "About app");
     help_line("G", "Galaxy demo");
+    help_line("M", "Games launcher");
 }
 
 static void print_help_input() {
@@ -314,6 +316,30 @@ static void command_edit(const char* args) {
     }
 }
 
+
+static void command_lnpinfo(const char* args) {
+    const char* name = skip_spaces(args);
+    if (!has_arg(name)) {
+        vga_writeln("Usage: lnpinfo <file.lnp>");
+        return;
+    }
+
+    const char* data = ramfs_read_file(name);
+    if (!data) {
+        vga_writeln("LNP file not found.");
+        return;
+    }
+
+    if (starts_with(data, "LNP1")) {
+        vga_writeln("Nova Picture file");
+        vga_writeln("Format: LNP1");
+        vga_writeln("Current RAMFS demo stores placeholder text.");
+        vga_writeln("Binary LNP loading comes with initrd/files package.");
+    } else {
+        vga_writeln("Not an LNP1 file.");
+    }
+}
+
 static void command_tlrun(const char* args) {
     const char* name = skip_spaces(args);
     if (!has_arg(name)) {
@@ -399,6 +425,8 @@ static void run_command(const char* cmd) {
         const char* text = ramfs_read_file(arg);
         if (text) vga_writeln(text);
         else vga_writeln("File not found.");
+    } else if (starts_with(cmd, "lnpinfo ")) {
+        command_lnpinfo(cmd + 8);
     } else if (starts_with(cmd, "edit ")) {
         command_edit(cmd + 5);
         return;
