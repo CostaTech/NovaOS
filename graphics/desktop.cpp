@@ -36,7 +36,7 @@ static void box(int x, int y, int w, int h, const char* title, u8 color) {
 
 static void draw_footer(const char* text) {
     vga_write_at(0, 23, "================================================================================", 0x30);
-    vga_write_at(0, 24, "F Files T Term S Set C Calc N Notes P Paint D Docs O Tour H Hello M Games", 0x3E);
+    vga_write_at(0, 24, "Click an app in the dock. Keyboard shortcuts are disabled on desktop.", 0x3E);
     if (text) vga_write_at(66, 24, text, 0x3B);
 }
 
@@ -56,9 +56,9 @@ static void draw_satellite_logo(int x, int y) {
     vga_write_at(x + 1, y + 3, "NOVA LINK", 0x1A);
 }
 
-static void draw_dock_icon(int x, int y, const char* key, const char* label, u8 color) {
+static void draw_dock_icon(int x, int y, const char* label, u8 color) {
     vga_write_at(x, y, "[ ]", color);
-    vga_write_at(x + 1, y, key, 0x1E);
+    vga_write_at(x + 1, y, "*", 0x1E);
     vga_write_at(x + 4, y, label, 0x1F);
 }
 
@@ -100,8 +100,8 @@ static void draw_note_window(void) {
     vga_write_at(38, 8, "Explore files, apps and TencleLang.", 0x1F);
     vga_write_at(38, 10, "Default apps are protected.", 0x1A);
     vga_write_at(38, 12, "Today: build the storage layer.", 0x1B);
-    vga_write_at(38, 15, "Terminal: press T", 0x1E);
-    vga_write_at(38, 16, "Calculator: press C", 0x1D);
+    vga_write_at(38, 15, "Open apps from the left dock.", 0x1E);
+    vga_write_at(38, 16, "TencleLang apps run inside NovaOS.", 0x1D);
 }
 
 static void draw_system_panel(void) {
@@ -121,16 +121,16 @@ void desktop_draw() {
     draw_satellite_logo(68, 3);
 
     box(1, 3, 18, 12, " Apps ", 0x1A);
-    draw_dock_icon(3, 4, "F", "Files", 0x1B);
-    draw_dock_icon(3, 5, "T", "Terminal", 0x1A);
-    draw_dock_icon(3, 6, "S", "Settings", 0x1D);
-    draw_dock_icon(3, 7, "C", "Calc", 0x1E);
-    draw_dock_icon(3, 8, "N", "Notes", 0x1B);
-    draw_dock_icon(3, 9, "P", "Paint", 0x1D);
-    draw_dock_icon(3, 10, "D", "Docs", 0x1E);
-    draw_dock_icon(3, 11, "O", "Tour", 0x1A);
-    draw_dock_icon(3, 12, "H", "Hello", 0x1F);
-    draw_dock_icon(3, 13, "M", "Games", 0x1D);
+    draw_dock_icon(3, 4, "Files", 0x1B);
+    draw_dock_icon(3, 5, "Terminal", 0x1A);
+    draw_dock_icon(3, 6, "Settings", 0x1D);
+    draw_dock_icon(3, 7, "Calc", 0x1E);
+    draw_dock_icon(3, 8, "Notes", 0x1B);
+    draw_dock_icon(3, 9, "Paint", 0x1D);
+    draw_dock_icon(3, 10, "Docs", 0x1E);
+    draw_dock_icon(3, 11, "Tour", 0x1A);
+    draw_dock_icon(3, 12, "Hello", 0x1F);
+    draw_dock_icon(3, 13, "Games", 0x1D);
 
     draw_calendar_panel();
     draw_note_window();
@@ -362,7 +362,6 @@ void desktop_loop() {
             desktop_redraw();
         }
 
-        char c = keyboard_try_read_char();
-        if (c) open_desktop_action(c);
+        (void)keyboard_try_read_char();
     }
 }
