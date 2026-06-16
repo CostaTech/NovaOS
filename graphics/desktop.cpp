@@ -40,7 +40,7 @@ static void draw_footer(const char* text) {
     vga_write_at(38, 24, "A About", 0x3A);
     vga_write_at(49, 24, "R Reboot", 0x3C);
     vga_write_at(61, 24, "P Shutdown", 0x3C);
-    vga_write_at(73, 24, "M Games", 0x3D);
+    vga_write_at(72, 24, "C Calc", 0x3D);
     if (text) vga_write_at(68, 1, text, 0x1E);
 }
 
@@ -86,6 +86,7 @@ void desktop_draw() {
     draw_icon(18, 5, "T", ">__", "|__", "Term", 0x1A);
     draw_icon(31, 5, "S", "{##", " ##", "Set", 0x1D);
     draw_icon(44, 5, "A", "NVA", " OS", "About", 0x1E);
+    draw_icon(57, 5, "C", "123", "+-=", "Calc", 0x1B);
 
     draw_icon(5, 12, "G", ".*.", "***", "Galaxy", 0x1D);
     draw_icon(18, 12, "R", "[>>", " >>", "Reboot", 0x1C);
@@ -172,6 +173,20 @@ static void games_app() {
     vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
 }
 
+static void calculator_app() {
+    vga_clear(0x1F);
+    vga_write_at(2, 1, "NovaOS / Calculator", 0x1E);
+    box(2, 3, 74, 17, " NovaCalc ", 0x1E);
+    vga_write_at(4, 5, "Calculator is also available as /apps/calculator.tlang", 0x1F);
+    vga_write_at(4, 7, "Demo:", 0x1A);
+    vga_write_at(6, 9, "8 + 2 = 10", 0x1F);
+    vga_write_at(6, 10, "8 - 2 = 6", 0x1F);
+    vga_write_at(6, 11, "8 * 2 = 16", 0x1F);
+    vga_write_at(6, 12, "8 / 2 = 4", 0x1F);
+    vga_write_at(4, 15, "Try in Terminal: cd /  |  cd apps  |  tlrun calculator.tlang", 0x1E);
+    vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
+}
+
 static void settings_app() {
     vga_clear(0x1F);
     vga_write_at(2, 1, "NovaOS / Settings", 0x1E);
@@ -223,6 +238,7 @@ static char icon_at(int x, int y) {
     if (inside_rect(x, y, 18, 5, 10, 5)) return 't';
     if (inside_rect(x, y, 31, 5, 10, 5)) return 's';
     if (inside_rect(x, y, 44, 5, 10, 5)) return 'a';
+    if (inside_rect(x, y, 57, 5, 10, 5)) return 'c';
     if (inside_rect(x, y, 5, 12, 10, 5)) return 'g';
     if (inside_rect(x, y, 18, 12, 10, 5)) return 'r';
     if (inside_rect(x, y, 31, 12, 10, 5)) return 'p';
@@ -252,6 +268,10 @@ static void open_desktop_action(char action) {
         desktop_redraw();
     } else if (action == 'm' || action == 'M') {
         games_app();
+        wait_escape_then_desktop();
+        desktop_redraw();
+    } else if (action == 'c' || action == 'C') {
+        calculator_app();
         wait_escape_then_desktop();
         desktop_redraw();
     } else if (action == 'r' || action == 'R') {

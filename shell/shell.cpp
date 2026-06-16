@@ -123,8 +123,11 @@ static void print_help_lang() {
     help_line("tencle demo", "run a built-in demo");
     help_line("tlrun <file>", "run a .tlang file in current folder");
     vga_writeln("Syntax: var name = \"text\"");
+    vga_writeln("Syntax: var n = 2 + 3");
     vga_writeln("Syntax: int << func >>(\"text\")");
     vga_writeln("Syntax: int << func >>(name)");
+    vga_writeln("Syntax: << ! >func> if n > 2 { ... }");
+    vga_writeln("Syntax: <<While>>! <on> n < 5 { ... }");
     vga_writeln("Try: cd apps  then  tlrun hello.tlang");
 }
 
@@ -137,6 +140,7 @@ static void print_help_apps() {
     help_line("A", "About app");
     help_line("G", "Galaxy demo");
     help_line("M", "Games launcher");
+    help_line("C", "Calculator app");
 }
 
 static void print_help_input() {
@@ -144,7 +148,7 @@ static void print_help_input() {
     vga_writeln("Input");
     help_line("keyboard", "main input device for now");
     help_line("mouse", "show isolated mouse driver status");
-    vga_writeln("Real PS/2 mouse packets stay disabled until stable.");
+    vga_writeln("PS/2 mouse packets are filtered for safer real PC tests.");
 }
 
 static void print_help_power() {
@@ -439,7 +443,7 @@ static void run_command(const char* cmd) {
     } else if (starts_with(cmd, "rm ")) {
         const char* arg = skip_spaces(cmd + 3);
         if (ramfs_rm(arg)) vga_writeln("Removed.");
-        else vga_writeln("Cannot remove. File missing or folder not empty.");
+        else vga_writeln("Cannot remove. Missing, protected, or folder not empty.");
     } else if (streq(cmd, "mouse")) {
         mouse_poll();
         if (mouse_enabled()) vga_writeln("Mouse driver: PS/2 polling enabled.");
@@ -456,7 +460,7 @@ static void run_command(const char* cmd) {
         vga_write(" buttons=");
         vga_putc((char)('0' + mouse_buttons()));
         vga_putc('\n');
-        vga_writeln("Enable test: set NOVA_ENABLE_MOUSE to 1 in drivers/mouse.c");
+        vga_writeln("Mouse is filtered to avoid random real-hardware packets.");
     } else if (starts_with(cmd, "tlrun ")) {
         command_tlrun(cmd + 6);
     } else if (streq(cmd, "tencle") || starts_with(cmd, "tencle ")) {

@@ -6,7 +6,7 @@ struct RamFile {
     int protected_entry;
     int parent;
     char name[24];
-    char content[192];
+    char content[512];
 };
 
 static RamFile entries[64];
@@ -74,7 +74,7 @@ static int make_entry_ex(int parent, const char* name, int is_dir, const char* c
     entries[id].protected_entry = protected_entry;
     entries[id].parent = parent;
     str_copy(entries[id].name, name, 24);
-    str_copy(entries[id].content, content, 192);
+    str_copy(entries[id].content, content, 512);
     return 1;
 }
 
@@ -132,7 +132,10 @@ void ramfs_init(void) {
         make_system_entry(apps, "files.app", 0, "File manager entry.");
         make_system_entry(apps, "editor.app", 0, "NovaEdit entry.");
         make_system_entry(apps, "games.app", 0, "Games launcher entry.");
+        make_system_entry(apps, "calculator.app", 0, "Calculator app entry.");
+        make_system_entry(apps, "settings.tlang", 0, "var title = \"NovaOS Settings\"\nint << func >>(title)\nvar mouse = \"Mouse: PS/2 polling driver\"\nint << func >>(mouse)\nvar files = \"Default apps are protected\"\nint << func >>(files)");
         make_system_entry(apps, "hello.tlang", 0, "var msg = \"Hello from TencleLang inside NovaOS\"\nint << func >>(msg)");
+        make_system_entry(apps, "calculator.tlang", 0, "var a = 8\nvar b = 2\nvar sum = a + b\nvar diff = a - b\nvar product = a * b\nvar division = a / b\nint << func >>(\"NovaCalc\")\nint << func >>(sum)\nint << func >>(diff)\nint << func >>(product)\n<< ! >func> if b > 0 {\nint << func >>(division)\n}\n>> func << else {\nint << func >>(\"Cannot divide\")\n}\nvar count = 0\n<<While>>! <on> count < 3 {\nint << func >>(count)\nvar count = count + 1\n}");
     }
     if (games >= 0) {
         make_system_entry(games, "hello_game.tlang", 0, "var title = \"Nova Games will run TencleLang apps\"\nint << func >>(title)");
@@ -225,7 +228,7 @@ const char* ramfs_read_file(const char* name) {
 int ramfs_write_file(const char* name, const char* content) {
     int id = find_child(cwd, name);
     if (id < 0 || entries[id].is_dir) return 0;
-    str_copy(entries[id].content, content ? content : "", 192);
+    str_copy(entries[id].content, content ? content : "", 512);
     return 1;
 }
 
