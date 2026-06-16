@@ -204,20 +204,6 @@ static void games_app() {
     vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
 }
 
-static void calculator_app() {
-    vga_clear(0x1F);
-    vga_write_at(2, 1, "NovaOS / Calculator", 0x1E);
-    box(2, 3, 74, 17, " NovaCalc ", 0x1E);
-    vga_write_at(4, 5, "Calculator is also available as /apps/calculator.tlang", 0x1F);
-    vga_write_at(4, 7, "Operations:", 0x1A);
-    vga_write_at(6, 9, "8 + 2 = 10", 0x1F);
-    vga_write_at(6, 10, "8 - 2 = 6", 0x1F);
-    vga_write_at(6, 11, "8 * 2 = 16", 0x1F);
-    vga_write_at(6, 12, "8 / 2 = 4", 0x1F);
-    vga_write_at(4, 15, "Try in Terminal: cd /  |  cd apps  |  tlrun calculator.tlang", 0x1E);
-    vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
-}
-
 static void settings_app() {
     vga_clear(0x1F);
     vga_write_at(2, 1, "NovaOS / Settings", 0x1E);
@@ -261,6 +247,27 @@ static void wait_escape_then_desktop() {
     }
 }
 
+static void run_tlang_app(const char* filename) {
+    ramfs_cd("/");
+    ramfs_cd("apps");
+
+    const char* source = ramfs_read_file(filename);
+
+    vga_clear(0x0F);
+    vga_write_at(2, 1, "NovaOS / TencleLang App", 0x0E);
+    vga_write_at(2, 2, filename, 0x0B);
+
+    if (!source) {
+        vga_write_at(2, 4, "App not found.", 0x0C);
+    } else {
+        vga_set_color(0x0F);
+        tenclelang_run_source(source);
+    }
+
+    vga_write_at(2, 22, "Press ESC to return to desktop.", 0x0E);
+    wait_escape_then_desktop();
+}
+
 static int inside_rect(int px, int py, int x, int y, int w, int h) {
     return px >= x && px < x + w && py >= y && py < y + h;
 }
@@ -301,8 +308,7 @@ static void open_desktop_action(char action) {
         wait_escape_then_desktop();
         desktop_redraw();
     } else if (action == 'c' || action == 'C') {
-        calculator_app();
-        wait_escape_then_desktop();
+        run_tlang_app("calculator.tlang");
         desktop_redraw();
     } else if (action == 'r' || action == 'R') {
         if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
