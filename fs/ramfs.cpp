@@ -129,15 +129,6 @@ void ramfs_init(void) {
     }
     if (home >= 0) make_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
     if (apps >= 0) {
-        make_system_entry(apps, "terminal.app", 0, "Terminal app entry.");
-        make_system_entry(apps, "files.app", 0, "File manager entry.");
-        make_system_entry(apps, "editor.app", 0, "NovaEdit entry.");
-        make_system_entry(apps, "games.app", 0, "Games launcher entry.");
-        make_system_entry(apps, "calculator.app", 0, "Calculator app entry.");
-        make_system_entry(apps, "notes.app", 0, "Notes app entry.");
-        make_system_entry(apps, "paint.app", 0, "NovaPaint text graphics entry.");
-        make_system_entry(apps, "tour.app", 0, "NovaOS guided tour entry.");
-        make_system_entry(apps, "documentation.app", 0, "NovaOS documentation entry.");
         make_system_entry(apps, "settings.tlang", 0, "var title = \"NovaOS Settings\"\nint << func >>(title)\nvar mouse = \"Mouse: PS/2 polling driver\"\nint << func >>(mouse)\nvar files = \"Default apps are protected\"\nint << func >>(files)");
         make_system_entry(apps, "tour.tlang", 0, "int << func >>(\"Welcome to NovaOS\")\nint << func >>(\"1 Files: explore NovaFS\")\nint << func >>(\"2 Terminal: run commands\")\nint << func >>(\"3 TencleLang: build OS apps\")\nint << func >>(\"4 Games and graphics will grow here\")");
         make_system_entry(apps, "documentation.tlang", 0, "int << func >>(\"NovaOS Documentation\")\nint << func >>(\"help core, help fs, help lang, help apps\")\nint << func >>(\"Official TencleLang syntax is special\")\nint << func >>(\"Default files are protected\")");
