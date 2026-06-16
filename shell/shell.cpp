@@ -120,7 +120,7 @@ static void print_help_lang() {
     vga_writeln("TencleLang commands");
     help_line("tencle", "show TencleLang status");
     help_line("tencle help", "show TencleLang syntax");
-    help_line("tencle demo", "run a built-in demo");
+    help_line("tencle sample", "run a built-in TencleLang sample");
     help_line("tlrun <file>", "run a .tlang file in current folder");
     vga_writeln("Syntax: var name = \"text\"");
     vga_writeln("Syntax: var n = 2 + 3");
@@ -138,7 +138,7 @@ static void print_help_apps() {
     help_line("T", "Terminal app");
     help_line("S", "Settings app");
     help_line("A", "About app");
-    help_line("G", "Galaxy demo");
+    help_line("G", "Galaxy app");
     help_line("M", "Games launcher");
     help_line("C", "Calculator app");
 }
@@ -339,7 +339,7 @@ static void command_lnpinfo(const char* args) {
     if (starts_with(data, "LNP1")) {
         vga_writeln("Nova Picture file");
         vga_writeln("Format: LNP1");
-        vga_writeln("Current RAMFS demo stores placeholder text.");
+        vga_writeln("Current RAMFS image stores placeholder text.");
         vga_writeln("Binary LNP loading comes with initrd/files package.");
     } else {
         vga_writeln("Not an LNP1 file.");
@@ -371,15 +371,15 @@ static void command_tencle(const char* args) {
     args = skip_spaces(args);
     if (!has_arg(args)) {
         vga_writeln("TencleLang runtime is inside NovaOS.");
-        vga_writeln("Use: tencle help, tencle demo, tlrun <file.tlang>");
+        vga_writeln("Use: tencle help, tencle sample, tlrun <file.tlang>");
         return;
     }
     if (streq(args, "help")) {
         tenclelang_help();
         return;
     }
-    if (streq(args, "demo")) {
-        tenclelang_run_source("int << func >>(\"TencleLang demo inside NovaOS\")");
+    if (streq(args, "sample")) {
+        tenclelang_run_source("int << func >>(\"TencleLang sample inside NovaOS\")");
         return;
     }
     vga_writeln("Unknown TencleLang command. Try: tencle help");

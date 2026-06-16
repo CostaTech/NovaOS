@@ -122,7 +122,7 @@ void ramfs_init(void) {
     int images = find_child(0, "images");
     if (docs >= 0) {
         make_system_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech.");
-        make_system_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo demo.lnp for metadata.");
+        make_system_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo galaxy.lnp for metadata.");
         make_system_entry(docs, "tencle.txt", 0, "TencleLang uses var name = \"text\" and int << func >>(name)");
         make_system_entry(docs, "games.txt", 0, "Games will be launched from /games and written in TencleLang.");
     }
@@ -142,7 +142,7 @@ void ramfs_init(void) {
         make_system_entry(games, "README.txt", 0, "Put future TencleLang games here.");
     }
     if (images >= 0) {
-        make_system_entry(images, "demo.lnp", 0, "LNP1 64 36 RGB demo placeholder");
+        make_system_entry(images, "galaxy.lnp", 0, "LNP1 64 36 RGB Nova placeholder");
     }
 }
 

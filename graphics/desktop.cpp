@@ -141,7 +141,7 @@ static void files_app() {
 static void galaxy_app() {
     vga_clear(0x0F);
     vga_write_at(2, 1, "NovaOS / Galaxy", 0x0E);
-    vga_write_at(55, 1, "Text-mode graphic demo", 0x0B);
+    vga_write_at(55, 1, "Text-mode graphic app", 0x0B);
 
     for (int y = 3; y < 22; y++) {
         for (int x = 2; x < 78; x++) {
@@ -178,7 +178,7 @@ static void calculator_app() {
     vga_write_at(2, 1, "NovaOS / Calculator", 0x1E);
     box(2, 3, 74, 17, " NovaCalc ", 0x1E);
     vga_write_at(4, 5, "Calculator is also available as /apps/calculator.tlang", 0x1F);
-    vga_write_at(4, 7, "Demo:", 0x1A);
+    vga_write_at(4, 7, "Operations:", 0x1A);
     vga_write_at(6, 9, "8 + 2 = 10", 0x1F);
     vga_write_at(6, 10, "8 - 2 = 6", 0x1F);
     vga_write_at(6, 11, "8 * 2 = 16", 0x1F);
