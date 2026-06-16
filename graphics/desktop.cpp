@@ -198,16 +198,76 @@ static void wait_escape_then_desktop() {
     }
 }
 
+static int inside_rect(int px, int py, int x, int y, int w, int h) {
+    return px >= x && px < x + w && py >= y && py < y + h;
+}
+
+static char icon_at(int x, int y) {
+    if (inside_rect(x, y, 5, 5, 10, 5)) return 'f';
+    if (inside_rect(x, y, 18, 5, 10, 5)) return 't';
+    if (inside_rect(x, y, 31, 5, 10, 5)) return 's';
+    if (inside_rect(x, y, 44, 5, 10, 5)) return 'a';
+    if (inside_rect(x, y, 5, 12, 10, 5)) return 'g';
+    if (inside_rect(x, y, 18, 12, 10, 5)) return 'r';
+    if (inside_rect(x, y, 31, 12, 10, 5)) return 'p';
+    return 0;
+}
+
+static void open_desktop_action(char action) {
+    if (action == 't' || action == 'T') {
+        shell_run();
+        desktop_redraw();
+    } else if (action == 'f' || action == 'F') {
+        files_app();
+        wait_escape_then_desktop();
+        desktop_redraw();
+    } else if (action == 's' || action == 'S') {
+        settings_app();
+        wait_escape_then_desktop();
+        desktop_redraw();
+    } else if (action == 'g' || action == 'G') {
+        galaxy_app();
+        wait_escape_then_desktop();
+        desktop_redraw();
+    } else if (action == 'a' || action == 'A') {
+        about_app();
+        wait_escape_then_desktop();
+        desktop_redraw();
+    } else if (action == 'r' || action == 'R') {
+        if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
+        desktop_redraw();
+    } else if (action == 'p' || action == 'P') {
+        if (confirm_action(" Shutdown ", "Do you want to shutdown NovaOS?")) system_shutdown();
+        desktop_redraw();
+    }
+}
+
 void desktop_loop() {
     desktop_redraw();
     int last_x = mouse_x();
     int last_y = mouse_y();
     int last_buttons = mouse_buttons();
+    int was_left_down = 0;
     int idle_ticks = 0;
 
     for (;;) {
         mouse_poll();
         idle_ticks++;
+
+        int left_down = mouse_buttons() & 1;
+        if (left_down && !was_left_down) {
+            char action = icon_at(mouse_x(), mouse_y());
+            if (action) {
+                was_left_down = 1;
+                open_desktop_action(action);
+                last_x = mouse_x();
+                last_y = mouse_y();
+                last_buttons = mouse_buttons();
+                continue;
+            }
+        }
+        was_left_down = left_down;
+
         if ((mouse_x() != last_x || mouse_y() != last_y || mouse_buttons() != last_buttons) && idle_ticks > 2500) {
             last_x = mouse_x();
             last_y = mouse_y();
@@ -217,33 +277,6 @@ void desktop_loop() {
         }
 
         char c = keyboard_try_read_char();
-        if (!c) continue;
-
-        if (c == 't' || c == 'T') {
-            shell_run();
-            desktop_redraw();
-        } else if (c == 'f' || c == 'F') {
-            files_app();
-            wait_escape_then_desktop();
-            desktop_redraw();
-        } else if (c == 's' || c == 'S') {
-            settings_app();
-            wait_escape_then_desktop();
-            desktop_redraw();
-        } else if (c == 'g' || c == 'G') {
-            galaxy_app();
-            wait_escape_then_desktop();
-            desktop_redraw();
-        } else if (c == 'a' || c == 'A') {
-            about_app();
-            wait_escape_then_desktop();
-            desktop_redraw();
-        } else if (c == 'r' || c == 'R') {
-            if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
-            desktop_redraw();
-        } else if (c == 'p' || c == 'P') {
-            if (confirm_action(" Shutdown ", "Do you want to shutdown NovaOS?")) system_shutdown();
-            desktop_redraw();
-        }
+        if (c) open_desktop_action(c);
     }
 }
