@@ -6,7 +6,7 @@ struct RamFile {
     int protected_entry;
     int parent;
     char name[24];
-    char content[512];
+    char content[1024];
 };
 
 static RamFile entries[64];
@@ -74,7 +74,7 @@ static int make_entry_ex(int parent, const char* name, int is_dir, const char* c
     entries[id].protected_entry = protected_entry;
     entries[id].parent = parent;
     str_copy(entries[id].name, name, 24);
-    str_copy(entries[id].content, content, 512);
+    str_copy(entries[id].content, content, 1024);
     return 1;
 }
 
@@ -121,10 +121,11 @@ void ramfs_init(void) {
     int games = find_child(0, "games");
     int images = find_child(0, "images");
     if (docs >= 0) {
-        make_system_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech.");
+        make_system_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech. It has Desktop, Terminal, NovaFS, TencleLang apps and protected official files.");
         make_system_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo galaxy.lnp for metadata.");
-        make_system_entry(docs, "tencle.txt", 0, "TencleLang uses var name = \"text\" and int << func >>(name)");
+        make_system_entry(docs, "tencle.txt", 0, "TencleLang uses var, input, int << func >>, special if and special while. Normal print/if/while are not official.");
         make_system_entry(docs, "games.txt", 0, "Games will be launched from /games and written in TencleLang.");
+        make_system_entry(docs, "tour.txt", 0, "NovaOS Tour: open Files, Terminal, Settings, Calculator, Galaxy and Games from the desktop.");
     }
     if (home >= 0) make_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
     if (apps >= 0) {
@@ -133,9 +134,17 @@ void ramfs_init(void) {
         make_system_entry(apps, "editor.app", 0, "NovaEdit entry.");
         make_system_entry(apps, "games.app", 0, "Games launcher entry.");
         make_system_entry(apps, "calculator.app", 0, "Calculator app entry.");
+        make_system_entry(apps, "notes.app", 0, "Notes app entry.");
+        make_system_entry(apps, "paint.app", 0, "NovaPaint text graphics entry.");
+        make_system_entry(apps, "tour.app", 0, "NovaOS guided tour entry.");
+        make_system_entry(apps, "documentation.app", 0, "NovaOS documentation entry.");
         make_system_entry(apps, "settings.tlang", 0, "var title = \"NovaOS Settings\"\nint << func >>(title)\nvar mouse = \"Mouse: PS/2 polling driver\"\nint << func >>(mouse)\nvar files = \"Default apps are protected\"\nint << func >>(files)");
+        make_system_entry(apps, "tour.tlang", 0, "int << func >>(\"Welcome to NovaOS\")\nint << func >>(\"1 Files: explore NovaFS\")\nint << func >>(\"2 Terminal: run commands\")\nint << func >>(\"3 TencleLang: build OS apps\")\nint << func >>(\"4 Games and graphics will grow here\")");
+        make_system_entry(apps, "documentation.tlang", 0, "int << func >>(\"NovaOS Documentation\")\nint << func >>(\"help core, help fs, help lang, help apps\")\nint << func >>(\"Official TencleLang syntax is special\")\nint << func >>(\"Default files are protected\")");
+        make_system_entry(apps, "paint.tlang", 0, "int << func >>(\"NovaPaint\")\nint << func >>(\"+----------------+\")\nint << func >>(\"|  *   *   *     |\")\nint << func >>(\"|    NOVA ART    |\")\nint << func >>(\"|     *   *      |\")\nint << func >>(\"+----------------+\")");
+        make_system_entry(apps, "notes.tlang", 0, "int << func >>(\"Nova Notes\")\nint << func >>(\"Use edit filename.txt from Terminal to write notes.\")\nint << func >>(\"User files live in /home.\")");
         make_system_entry(apps, "hello.tlang", 0, "var msg = \"Hello from TencleLang inside NovaOS\"\nint << func >>(msg)");
-        make_system_entry(apps, "calculator.tlang", 0, "var a = 8\nvar b = 2\nvar sum = a + b\nvar diff = a - b\nvar product = a * b\nvar division = a / b\nint << func >>(\"NovaCalc\")\nint << func >>(sum)\nint << func >>(diff)\nint << func >>(product)\n<< ! >func> if b > 0 {\nint << func >>(division)\n}\n>> func << else {\nint << func >>(\"Cannot divide\")\n}\nvar count = 0\n<<While>>! <on> count < 3 {\nint << func >>(count)\nvar count = count + 1\n}");
+        make_system_entry(apps, "calculator.tlang", 0, "int << func >>(\"NovaCalc\")\nint << func >>(\"First number:\")\ninput(a)\nint << func >>(\"Operator + - * /:\")\ninput(op)\nint << func >>(\"Second number:\")\ninput(b)\n<< ! >func> if op == \"+\" {\nvar result = a + b\nint << func >>(result)\n}\n>> func << else {\n<< ! >func> if op == \"-\" {\nvar result = a - b\nint << func >>(result)\n}\n>> func << else {\n<< ! >func> if op == \"*\" {\nvar result = a * b\nint << func >>(result)\n}\n>> func << else {\n<< ! >func> if op == \"/\" {\nvar result = a / b\nint << func >>(result)\n}\n>> func << else {\nint << func >>(\"Unknown operator\")\n}\n}\n}\n}");
     }
     if (games >= 0) {
         make_system_entry(games, "hello_game.tlang", 0, "var title = \"Nova Games will run TencleLang apps\"\nint << func >>(title)");
@@ -228,7 +237,7 @@ const char* ramfs_read_file(const char* name) {
 int ramfs_write_file(const char* name, const char* content) {
     int id = find_child(cwd, name);
     if (id < 0 || entries[id].is_dir) return 0;
-    str_copy(entries[id].content, content ? content : "", 512);
+    str_copy(entries[id].content, content ? content : "", 1024);
     return 1;
 }
 

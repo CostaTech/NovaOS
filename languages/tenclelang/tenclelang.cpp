@@ -128,6 +128,14 @@ static int parse_int(const char** p, int* ok) {
     return value * sign;
 }
 
+static int text_to_int(const char* text, int* ok) {
+    const char* p = text;
+    int n = parse_int(&p, ok);
+    p = skip_spaces(p);
+    if (*p != 0) *ok = 0;
+    return n;
+}
+
 static int eval_number(const char* expr, int* ok) {
     const char* p = skip_spaces(expr);
     int left_ok = 0;
@@ -253,6 +261,15 @@ static int eval_condition(const char* cond) {
     while (cond[i] && cond[i] != '{' && j < 31) right_expr[j++] = cond[i++];
     right_expr[j] = 0;
 
+    int value_left_ok = 0;
+    int value_right_ok = 0;
+    TencleValue left_value = eval_value(left_expr, &value_left_ok);
+    TencleValue right_value = eval_value(right_expr, &value_right_ok);
+
+    if (double_eq && value_left_ok && value_right_ok && left_value.is_string && right_value.is_string) {
+        return str_eq(left_value.text, right_value.text);
+    }
+
     int ok_left = 0;
     int ok_right = 0;
     int left = eval_number(left_expr, &ok_left);
@@ -336,6 +353,47 @@ static int run_var(const char* line) {
     return set_var(name, value);
 }
 
+static int run_input(const char* line) {
+    const char* p = skip_spaces(line + 5);
+    if (*p != '(') return 0;
+    p++;
+
+    char name[24];
+    int name_len = copy_name(name, p, 24);
+    if (name_len <= 0) return 0;
+
+    char buffer[48];
+    int len = 0;
+    buffer[0] = 0;
+    vga_set_color(0x0B);
+    vga_write("? ");
+    vga_set_color(0x0F);
+
+    for (;;) {
+        char c = keyboard_read_char();
+        if (c == '\n') {
+            vga_putc('\n');
+            break;
+        }
+        if (c == '\b') {
+            if (len > 0) {
+                len--;
+                buffer[len] = 0;
+                vga_putc('\b');
+            }
+        } else if (c >= 32 && c <= 126 && len < 47) {
+            buffer[len++] = c;
+            buffer[len] = 0;
+            vga_putc(c);
+        }
+    }
+
+    int ok_number = 0;
+    int n = text_to_int(buffer, &ok_number);
+    if (ok_number) return set_var(name, make_number(n));
+    return set_var(name, make_string(buffer));
+}
+
 static int run_if(char lines[40][96], int* index, int end) {
     int block_end = find_block_end(lines, *index, end);
     if (block_end < 0) return 0;
@@ -387,6 +445,8 @@ static int run_lines(char lines[40][96], int start, int end) {
         if (!line[0] || str_eq(line, "}") || starts_with(line, "//")) continue;
         if (starts_with(line, "var ")) {
             if (!run_var(line)) return 0;
+        } else if (starts_with(line, "input")) {
+            if (!run_input(line)) return 0;
         } else if (starts_with(line, "int << func >>")) {
             if (!run_print(line)) return 0;
         } else if (starts_with(line, "<< ! >func> if")) {
@@ -415,6 +475,7 @@ void tenclelang_help(void) {
     vga_writeln("Official syntax now:");
     vga_writeln("  var name = \"text\"");
     vga_writeln("  var n = 2 + 3");
+    vga_writeln("  input(name)");
     vga_writeln("  int << func >>(name)");
     vga_writeln("  << ! >func> if n > 2 { ... } >> func << else { ... }");
     vga_writeln("  <<While>>! <on> n < 5 { ... }");

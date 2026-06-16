@@ -124,6 +124,7 @@ static void print_help_lang() {
     help_line("tlrun <file>", "run a .tlang file in current folder");
     vga_writeln("Syntax: var name = \"text\"");
     vga_writeln("Syntax: var n = 2 + 3");
+    vga_writeln("Syntax: input(name)");
     vga_writeln("Syntax: int << func >>(\"text\")");
     vga_writeln("Syntax: int << func >>(name)");
     vga_writeln("Syntax: << ! >func> if n > 2 { ... }");
