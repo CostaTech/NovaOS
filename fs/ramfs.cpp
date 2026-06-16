@@ -113,6 +113,7 @@ void ramfs_init(void) {
         make_entry(apps, "terminal.app", 0, "Terminal app entry.");
         make_entry(apps, "files.app", 0, "File manager entry.");
         make_entry(apps, "editor.app", 0, "NovaEdit entry.");
+        make_entry(apps, "hello.tlang", 0, "print \"Hello from TencleLang\"; color 10; print \"NovaOS runs internal scripts\"; color 15");
     }
 }
 

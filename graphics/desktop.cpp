@@ -3,7 +3,7 @@
 void shell_run();
 
 static const char* OS_NAME = "NovaOS";
-static const char* AUTHOR = "CostaTech and Andryx";
+static const char* AUTHOR = "CostaTech";
 
 static int text_len(const char* text) {
     int n = 0;

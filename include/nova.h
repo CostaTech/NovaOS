@@ -58,6 +58,10 @@ int ramfs_child_is_dir(int index);
 void kernel_panic(const char* message, const char* file, int line);
 void system_reboot(void);
 void system_shutdown(void);
+
+void tenclelang_init(void);
+void tenclelang_help(void);
+int tenclelang_run_source(const char* source);
 #define NOVA_PANIC(message) kernel_panic((message), __FILE__, __LINE__)
 
 #ifdef __cplusplus

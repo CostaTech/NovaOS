@@ -73,37 +73,93 @@ static void help_line(const char* cmd, const char* text) {
     vga_writeln(text);
 }
 
-static void print_help() {
+static void print_help_index() {
     vga_set_color(0x0E);
-    vga_writeln("+---------------- NovaOS Command Deck ----------------+");
+    vga_writeln("+------------- NovaOS Help Index -------------+");
+    vga_set_color(0x0F);
+    help_line("help core", "base terminal commands");
+    help_line("help fs", "filesystem commands");
+    help_line("help lang", "TencleLang commands");
+    help_line("help apps", "desktop apps and shortcuts");
+    help_line("help input", "keyboard and mouse info");
+    help_line("help power", "reboot and shutdown");
+    vga_set_color(0x0E);
+    vga_writeln("+---------------------------------------------+");
+    vga_set_color(0x0F);
+}
+
+static void print_help_core() {
     vga_set_color(0x0A);
-    vga_writeln("  Core");
-    help_line("help", "show this command guide");
+    vga_writeln("Core commands");
+    help_line("help", "show help categories");
+    help_line("help <category>", "show one help category");
     help_line("about", "show system information");
     help_line("clear", "clear the terminal screen");
+    help_line("again", "repeat last command");
     help_line("desktop", "return to the desktop");
+}
+
+static void print_help_fs() {
     vga_set_color(0x0D);
-    vga_writeln("  Files");
+    vga_writeln("Filesystem commands");
     help_line("pwd", "show current folder");
     help_line("ls", "list files and folders");
+    help_line("tree", "show folder tree");
     help_line("cd <dir>", "enter folder, use cd .. or cd /");
     help_line("mkdir <name>", "create a folder in RAM");
     help_line("create <name> [text]", "create a file in RAM");
     help_line("cat <name>", "read a file");
-    help_line("edit <name>", "open a simple one-line file editor");
+    help_line("edit <name>", "open a one-line editor");
     help_line("rename <old> <new>", "rename a file or folder");
-    help_line("tree", "show folder tree");
-    help_line("again", "repeat last command");
     help_line("rm <name>", "remove a file or empty folder");
-    vga_set_color(0x0C);
-    vga_writeln("  Power and language");
-    help_line("mouse", "show mouse driver status");
+}
+
+static void print_help_lang() {
+    vga_set_color(0x0B);
+    vga_writeln("TencleLang commands");
     help_line("tencle", "show TencleLang status");
-    help_line("reboot", "restart NovaOS");
-    help_line("shutdown", "power off NovaOS");
+    help_line("tencle help", "show TencleLang syntax");
+    help_line("tencle demo", "run a built-in demo");
+    help_line("tlrun <file>", "run a .tlang file in current folder");
+    vga_writeln("Try: cd apps  then  tlrun hello.tlang");
+}
+
+static void print_help_apps() {
     vga_set_color(0x0E);
-    vga_writeln("+-----------------------------------------------------+");
-    vga_set_color(0x0F);
+    vga_writeln("Desktop apps");
+    help_line("F", "Files app");
+    help_line("T", "Terminal app");
+    help_line("S", "Settings app");
+    help_line("A", "About app");
+    help_line("G", "Galaxy demo");
+}
+
+static void print_help_input() {
+    vga_set_color(0x0C);
+    vga_writeln("Input");
+    help_line("keyboard", "main input device for now");
+    help_line("mouse", "show isolated mouse driver status");
+    vga_writeln("Real PS/2 mouse packets stay disabled until stable.");
+}
+
+static void print_help_power() {
+    vga_set_color(0x0C);
+    vga_writeln("Power commands");
+    help_line("reboot", "restart NovaOS");
+    help_line("shutdown", "power off NovaOS when emulator/PC supports it");
+}
+
+static void print_help_category(const char* category) {
+    if (streq(category, "core")) print_help_core();
+    else if (streq(category, "fs")) print_help_fs();
+    else if (streq(category, "lang")) print_help_lang();
+    else if (streq(category, "apps")) print_help_apps();
+    else if (streq(category, "input")) print_help_input();
+    else if (streq(category, "power")) print_help_power();
+    else {
+        vga_writeln("Unknown help category.");
+        print_help_index();
+    }
 }
 
 static void command_ls() {
@@ -257,6 +313,45 @@ static void command_edit(const char* args) {
     }
 }
 
+static void command_tlrun(const char* args) {
+    const char* name = skip_spaces(args);
+    if (!has_arg(name)) {
+        vga_writeln("Usage: tlrun <file.tlang>");
+        return;
+    }
+
+    const char* source = ramfs_read_file(name);
+    if (!source) {
+        vga_writeln("TencleLang file not found.");
+        return;
+    }
+
+    vga_set_color(0x0E);
+    vga_write("[TencleLang] Running ");
+    vga_writeln(name);
+    vga_set_color(0x0F);
+    if (tenclelang_run_source(source)) vga_writeln("[TencleLang] Done.");
+    else vga_writeln("[TencleLang] Finished with errors.");
+}
+
+static void command_tencle(const char* args) {
+    args = skip_spaces(args);
+    if (!has_arg(args)) {
+        vga_writeln("TencleLang runtime is inside NovaOS.");
+        vga_writeln("Use: tencle help, tencle demo, tlrun <file.tlang>");
+        return;
+    }
+    if (streq(args, "help")) {
+        tenclelang_help();
+        return;
+    }
+    if (streq(args, "demo")) {
+        tenclelang_run_source("print \"TencleLang demo\"; color 11; print \"Running inside NovaOS\"; color 15");
+        return;
+    }
+    vga_writeln("Unknown TencleLang command. Try: tencle help");
+}
+
 static void run_command(const char* cmd) {
     vga_putc('\n');
 
@@ -270,7 +365,9 @@ static void run_command(const char* cmd) {
             return;
         }
     } else if (streq(cmd, "help")) {
-        print_help();
+        print_help_index();
+    } else if (starts_with(cmd, "help ")) {
+        print_help_category(skip_spaces(cmd + 5));
     } else if (streq(cmd, "about")) {
         vga_writeln("NovaOS - created by CostaTech.");
         vga_writeln("Built with Assembly, C and C++.");
@@ -323,8 +420,10 @@ static void run_command(const char* cmd) {
         vga_putc((char)('0' + (mouse_y() / 10) % 10));
         vga_putc((char)('0' + mouse_y() % 10));
         vga_putc('\n');
-    } else if (streq(cmd, "tencle")) {
-        vga_writeln("TencleLang module present. Compiler integration comes later.");
+    } else if (starts_with(cmd, "tlrun ")) {
+        command_tlrun(cmd + 6);
+    } else if (streq(cmd, "tencle") || starts_with(cmd, "tencle ")) {
+        command_tencle(cmd + 6);
     } else if (streq(cmd, "reboot")) {
         vga_writeln("Rebooting NovaOS...");
         system_reboot();
