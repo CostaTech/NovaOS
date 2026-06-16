@@ -111,7 +111,7 @@ void ramfs_init(void) {
     if (docs >= 0) {
         make_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech.");
         make_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo demo.lnp for metadata.");
-        make_entry(docs, "tencle.txt", 0, "TencleLang inside NovaOS uses: int << func >>(\"text\")");
+        make_entry(docs, "tencle.txt", 0, "TencleLang uses var name = value and int << func >>(name)");
         make_entry(docs, "games.txt", 0, "Games will be launched from /games and written in TencleLang.");
     }
     if (home >= 0) make_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
@@ -120,10 +120,10 @@ void ramfs_init(void) {
         make_entry(apps, "files.app", 0, "File manager entry.");
         make_entry(apps, "editor.app", 0, "NovaEdit entry.");
         make_entry(apps, "games.app", 0, "Games launcher entry.");
-        make_entry(apps, "hello.tlang", 0, "int << func >>(\"Hello from TencleLang inside NovaOS\")");
+        make_entry(apps, "hello.tlang", 0, "var msg = Hello from TencleLang inside NovaOS\nint << func >>(msg)");
     }
     if (games >= 0) {
-        make_entry(games, "hello_game.tlang", 0, "int << func >>(\"Nova Games will run TencleLang apps\")");
+        make_entry(games, "hello_game.tlang", 0, "var title = Nova Games will run TencleLang apps\nint << func >>(title)");
         make_entry(games, "README.txt", 0, "Put future TencleLang games here.");
     }
     if (images >= 0) {

@@ -122,7 +122,9 @@ static void print_help_lang() {
     help_line("tencle help", "show TencleLang syntax");
     help_line("tencle demo", "run a built-in demo");
     help_line("tlrun <file>", "run a .tlang file in current folder");
+    vga_writeln("Syntax: var name = value");
     vga_writeln("Syntax: int << func >>(\"text\")");
+    vga_writeln("Syntax: int << func >>(name)");
     vga_writeln("Try: cd apps  then  tlrun hello.tlang");
 }
 
