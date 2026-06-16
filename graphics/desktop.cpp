@@ -98,10 +98,17 @@ void desktop_draw() {
     else vga_write_at(66, 13, "Mouse OFF", 0x1C);
     vga_write_at(66, 15, "TencleLang", 0x1E);
 
-    box(2, 19, 76, 4, " Mission ", 0x1B);
-    vga_write_at(4, 21, "Build apps in TencleLang. Use keyboard shortcuts until mouse is enabled.", 0x1F);
-
     draw_footer("Ready");
+}
+
+static void draw_mouse_cursor(void) {
+    if (!mouse_enabled() || !mouse_is_ready()) return;
+    vga_write_at(mouse_x(), mouse_y(), "X", 0x4F);
+}
+
+static void desktop_redraw(void) {
+    desktop_draw();
+    draw_mouse_cursor();
 }
 
 
@@ -192,34 +199,48 @@ static void wait_escape_then_desktop() {
 }
 
 void desktop_loop() {
-    desktop_draw();
+    desktop_redraw();
+    int last_x = mouse_x();
+    int last_y = mouse_y();
+    int last_buttons = mouse_buttons();
+
     for (;;) {
-        char c = keyboard_read_char();
+        mouse_poll();
+        if (mouse_x() != last_x || mouse_y() != last_y || mouse_buttons() != last_buttons) {
+            last_x = mouse_x();
+            last_y = mouse_y();
+            last_buttons = mouse_buttons();
+            desktop_redraw();
+        }
+
+        char c = keyboard_try_read_char();
+        if (!c) continue;
+
         if (c == 't' || c == 'T') {
             shell_run();
-            desktop_draw();
+            desktop_redraw();
         } else if (c == 'f' || c == 'F') {
             files_app();
             wait_escape_then_desktop();
-            desktop_draw();
+            desktop_redraw();
         } else if (c == 's' || c == 'S') {
             settings_app();
             wait_escape_then_desktop();
-            desktop_draw();
+            desktop_redraw();
         } else if (c == 'g' || c == 'G') {
             galaxy_app();
             wait_escape_then_desktop();
-            desktop_draw();
+            desktop_redraw();
         } else if (c == 'a' || c == 'A') {
             about_app();
             wait_escape_then_desktop();
-            desktop_draw();
+            desktop_redraw();
         } else if (c == 'r' || c == 'R') {
             if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
-            desktop_draw();
+            desktop_redraw();
         } else if (c == 'p' || c == 'P') {
             if (confirm_action(" Shutdown ", "Do you want to shutdown NovaOS?")) system_shutdown();
-            desktop_draw();
+            desktop_redraw();
         }
     }
 }

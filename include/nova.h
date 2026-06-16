@@ -23,6 +23,7 @@ void vga_write_at(int x, int y, const char* text, u8 color);
 
 void keyboard_init(void);
 char keyboard_read_char(void);
+char keyboard_try_read_char(void);
 
 void mouse_init(void);
 void mouse_poll(void);

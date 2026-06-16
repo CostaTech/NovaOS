@@ -1,6 +1,6 @@
 #include "nova.h"
 
-#define NOVA_ENABLE_MOUSE 0
+#define NOVA_ENABLE_MOUSE 1
 
 #define PS2_DATA 0x60
 #define PS2_STATUS 0x64

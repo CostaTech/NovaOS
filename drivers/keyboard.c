@@ -37,39 +37,46 @@ void keyboard_init(void) {
     while (inb(KBD_STATUS) & 1) (void)inb(KBD_DATA);
 }
 
+char keyboard_try_read_char(void) {
+    if ((inb(KBD_STATUS) & 1) == 0) return 0;
+
+    u8 status = inb(KBD_STATUS);
+    u8 sc = inb(KBD_DATA);
+
+    if (status & 0x20) return 0;       // AUX/mouse byte: ignore, keyboard only.
+
+    // Key release.
+    if (sc & 0x80) {
+        u8 released = sc & 0x7F;
+        if (released == 0x2A || released == 0x36) shift_down = 0;
+        return 0;
+    }
+
+    // Left/right Shift press.
+    if (sc == 0x2A || sc == 0x36) {
+        shift_down = 1;
+        return 0;
+    }
+
+    // Caps Lock press.
+    if (sc == 0x3A) {
+        caps_lock = !caps_lock;
+        return 0;
+    }
+
+    if (sc < 128) {
+        char c = shift_down ? keymap_shift[sc] : keymap[sc];
+        if (!shift_down && caps_lock && is_letter(c)) c = to_upper(c);
+        if (shift_down && caps_lock && c >= 'A' && c <= 'Z') c = (char)(c - 'A' + 'a');
+        return c;
+    }
+
+    return 0;
+}
+
 char keyboard_read_char(void) {
     for (;;) {
-        if ((inb(KBD_STATUS) & 1) == 0) continue;
-
-        u8 status = inb(KBD_STATUS);
-        u8 sc = inb(KBD_DATA);
-
-        if (status & 0x20) continue;       // AUX/mouse byte: ignore, keyboard only.
-
-        // Key release.
-        if (sc & 0x80) {
-            u8 released = sc & 0x7F;
-            if (released == 0x2A || released == 0x36) shift_down = 0;
-            continue;
-        }
-
-        // Left/right Shift press.
-        if (sc == 0x2A || sc == 0x36) {
-            shift_down = 1;
-            continue;
-        }
-
-        // Caps Lock press.
-        if (sc == 0x3A) {
-            caps_lock = !caps_lock;
-            continue;
-        }
-
-        if (sc < 128) {
-            char c = shift_down ? keymap_shift[sc] : keymap[sc];
-            if (!shift_down && caps_lock && is_letter(c)) c = to_upper(c);
-            if (shift_down && caps_lock && c >= 'A' && c <= 'Z') c = (char)(c - 'A' + 'a');
-            if (c) return c;
-        }
+        char c = keyboard_try_read_char();
+        if (c) return c;
     }
 }
