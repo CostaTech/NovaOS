@@ -248,6 +248,8 @@ void desktop_loop() {
     int last_y = mouse_y();
     int last_buttons = mouse_buttons();
     int was_left_down = 0;
+    int left_stable_ticks = 0;
+    int click_armed = 1;
     int idle_ticks = 0;
 
     for (;;) {
@@ -255,9 +257,18 @@ void desktop_loop() {
         idle_ticks++;
 
         int left_down = mouse_buttons() & 1;
-        if (left_down && !was_left_down) {
+        if (left_down) {
+            if (left_stable_ticks < 12) left_stable_ticks++;
+        } else {
+            left_stable_ticks = 0;
+            click_armed = 1;
+        }
+
+        if (left_down && click_armed && !was_left_down && left_stable_ticks >= 3) {
             char action = icon_at(mouse_x(), mouse_y());
+            if (action == 'r' || action == 'p') action = 0;
             if (action) {
+                click_armed = 0;
                 was_left_down = 1;
                 open_desktop_action(action);
                 last_x = mouse_x();

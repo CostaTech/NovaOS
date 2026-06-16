@@ -115,10 +115,10 @@ void mouse_poll(void) {
         accum_x += dx;
         accum_y += dy;
 
-        while (accum_x >= 6) { mx++; accum_x -= 6; }
-        while (accum_x <= -6) { mx--; accum_x += 6; }
-        while (accum_y >= 6) { my--; accum_y -= 6; }
-        while (accum_y <= -6) { my++; accum_y += 6; }
+        while (accum_x >= 4) { mx++; accum_x -= 4; }
+        while (accum_x <= -4) { mx--; accum_x += 4; }
+        while (accum_y >= 4) { my--; accum_y -= 4; }
+        while (accum_y <= -4) { my++; accum_y += 4; }
 
         mb = packet[0] & 0x07;
         clamp_position();
