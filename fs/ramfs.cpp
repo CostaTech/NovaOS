@@ -3,6 +3,7 @@
 struct RamFile {
     int used;
     int is_dir;
+    int protected_entry;
     int parent;
     char name[24];
     char content[192];
@@ -62,7 +63,7 @@ static int alloc_entry() {
     return -1;
 }
 
-static int make_entry(int parent, const char* name, int is_dir, const char* content) {
+static int make_entry_ex(int parent, const char* name, int is_dir, const char* content, int protected_entry) {
     if (!valid_name(name)) return 0;
     if (find_child(parent, name) >= 0) return 0;
     int id = alloc_entry();
@@ -70,16 +71,26 @@ static int make_entry(int parent, const char* name, int is_dir, const char* cont
 
     entries[id].used = 1;
     entries[id].is_dir = is_dir;
+    entries[id].protected_entry = protected_entry;
     entries[id].parent = parent;
     str_copy(entries[id].name, name, 24);
     str_copy(entries[id].content, content, 192);
     return 1;
 }
 
+static int make_entry(int parent, const char* name, int is_dir, const char* content) {
+    return make_entry_ex(parent, name, is_dir, content, 0);
+}
+
+static int make_system_entry(int parent, const char* name, int is_dir, const char* content) {
+    return make_entry_ex(parent, name, is_dir, content, 1);
+}
+
 static void clear_entries() {
     for (int i = 0; i < 64; i++) {
         entries[i].used = 0;
         entries[i].is_dir = 0;
+        entries[i].protected_entry = 0;
         entries[i].parent = 0;
         entries[i].name[0] = 0;
         entries[i].content[0] = 0;
@@ -91,17 +102,18 @@ void ramfs_init(void) {
 
     entries[0].used = 1;
     entries[0].is_dir = 1;
+    entries[0].protected_entry = 1;
     entries[0].parent = 0;
     str_copy(entries[0].name, "/", 24);
     cwd = 0;
 
-    make_entry(0, "system", 1, "");
-    make_entry(0, "apps", 1, "");
+    make_system_entry(0, "system", 1, "");
+    make_system_entry(0, "apps", 1, "");
     make_entry(0, "home", 1, "");
-    make_entry(0, "docs", 1, "");
-    make_entry(0, "games", 1, "");
-    make_entry(0, "images", 1, "");
-    make_entry(0, "readme.txt", 0, "NovaOS RAM filesystem is active. Type help in Terminal.");
+    make_system_entry(0, "docs", 1, "");
+    make_system_entry(0, "games", 1, "");
+    make_system_entry(0, "images", 1, "");
+    make_system_entry(0, "readme.txt", 0, "NovaOS RAM filesystem is active. Type help in Terminal.");
 
     int docs = find_child(0, "docs");
     int home = find_child(0, "home");
@@ -109,25 +121,25 @@ void ramfs_init(void) {
     int games = find_child(0, "games");
     int images = find_child(0, "images");
     if (docs >= 0) {
-        make_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech.");
-        make_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo demo.lnp for metadata.");
-        make_entry(docs, "tencle.txt", 0, "TencleLang uses var name = value and int << func >>(name)");
-        make_entry(docs, "games.txt", 0, "Games will be launched from /games and written in TencleLang.");
+        make_system_entry(docs, "about.txt", 0, "NovaOS is created by CostaTech.");
+        make_system_entry(docs, "lnp.txt", 0, "LNP is Nova Picture. Use lnpinfo demo.lnp for metadata.");
+        make_system_entry(docs, "tencle.txt", 0, "TencleLang uses var name = \"text\" and int << func >>(name)");
+        make_system_entry(docs, "games.txt", 0, "Games will be launched from /games and written in TencleLang.");
     }
     if (home >= 0) make_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
     if (apps >= 0) {
-        make_entry(apps, "terminal.app", 0, "Terminal app entry.");
-        make_entry(apps, "files.app", 0, "File manager entry.");
-        make_entry(apps, "editor.app", 0, "NovaEdit entry.");
-        make_entry(apps, "games.app", 0, "Games launcher entry.");
-        make_entry(apps, "hello.tlang", 0, "var msg = Hello from TencleLang inside NovaOS\nint << func >>(msg)");
+        make_system_entry(apps, "terminal.app", 0, "Terminal app entry.");
+        make_system_entry(apps, "files.app", 0, "File manager entry.");
+        make_system_entry(apps, "editor.app", 0, "NovaEdit entry.");
+        make_system_entry(apps, "games.app", 0, "Games launcher entry.");
+        make_system_entry(apps, "hello.tlang", 0, "var msg = \"Hello from TencleLang inside NovaOS\"\nint << func >>(msg)");
     }
     if (games >= 0) {
-        make_entry(games, "hello_game.tlang", 0, "var title = Nova Games will run TencleLang apps\nint << func >>(title)");
-        make_entry(games, "README.txt", 0, "Put future TencleLang games here.");
+        make_system_entry(games, "hello_game.tlang", 0, "var title = \"Nova Games will run TencleLang apps\"\nint << func >>(title)");
+        make_system_entry(games, "README.txt", 0, "Put future TencleLang games here.");
     }
     if (images >= 0) {
-        make_entry(images, "demo.lnp", 0, "LNP1 64 36 RGB demo placeholder");
+        make_system_entry(images, "demo.lnp", 0, "LNP1 64 36 RGB demo placeholder");
     }
 }
 
@@ -184,6 +196,7 @@ int ramfs_cd(const char* name) {
 int ramfs_rm(const char* name) {
     int id = find_child(cwd, name);
     if (id <= 0) return 0;
+    if (entries[id].protected_entry) return 0;
     if (entries[id].is_dir) {
         for (int i = 0; i < 64; i++) {
             if (entries[i].used && entries[i].parent == id) return 0;
@@ -197,6 +210,7 @@ int ramfs_rename(const char* old_name, const char* new_name) {
     if (!valid_name(new_name)) return 0;
     int id = find_child(cwd, old_name);
     if (id <= 0) return 0;
+    if (entries[id].protected_entry) return 0;
     if (find_child(cwd, new_name) >= 0) return 0;
     str_copy(entries[id].name, new_name, 24);
     return 1;

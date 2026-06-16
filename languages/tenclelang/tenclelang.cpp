@@ -34,6 +34,17 @@ static int copy_name(char* dst, const char* src, int max) {
 static void copy_value(char* dst, const char* src, int max) {
     int i = 0;
     src = skip_spaces(src);
+
+    if (*src == '"') {
+        src++;
+        while (src[i] && src[i] != '"' && i < max - 1) {
+            dst[i] = src[i];
+            i++;
+        }
+        dst[i] = 0;
+        return;
+    }
+
     while (src[i] && src[i] != '\n' && src[i] != '\r' && i < max - 1) {
         dst[i] = src[i];
         i++;
@@ -132,7 +143,7 @@ void tenclelang_help(void) {
     vga_writeln("TencleLang inside NovaOS");
     vga_set_color(0x0F);
     vga_writeln("Official syntax now:");
-    vga_writeln("  var name = value");
+    vga_writeln("  var name = \"text\"");
     vga_writeln("  int << func >>(\"text\")");
     vga_writeln("  int << func >>(name)");
     vga_writeln("Normal print/if/while syntax is not accepted.");
