@@ -47,6 +47,12 @@ Convertire da LNP a PPM:
 python3 tools/lnp_tool.py to-ppm image.lnp image.ppm
 ```
 
+Convertire da LNP a PNG, piu' comodo da aprire:
+
+```bash
+python3 tools/lnp_tool.py to-png image.lnp image.png
+```
+
 ## Perche' Python?
 
 Python non controlla l'hardware. Qui serve come officina esterna: prepara immagini e file mentre sviluppiamo NovaOS su Linux/Windows.

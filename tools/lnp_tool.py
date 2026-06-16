@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import struct
+import zlib
 from pathlib import Path
 
 MAGIC = b"LNP1"
@@ -102,6 +103,29 @@ def read_ppm(path: Path) -> tuple[int, int, bytes]:
     return width, height, bytes(values)
 
 
+def _png_chunk(kind: bytes, data: bytes) -> bytes:
+    crc = zlib.crc32(kind)
+    crc = zlib.crc32(data, crc) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", crc)
+
+
+def write_png(path: Path, width: int, height: int, pixels: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rows = bytearray()
+    stride = width * 3
+    for y in range(height):
+        rows.append(0)
+        start = y * stride
+        rows.extend(pixels[start:start + stride])
+
+    png = bytearray()
+    png.extend(b"\x89PNG\r\n\x1a\n")
+    png.extend(_png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)))
+    png.extend(_png_chunk(b"IDAT", zlib.compress(bytes(rows))))
+    png.extend(_png_chunk(b"IEND", b""))
+    path.write_bytes(bytes(png))
+
+
 def write_ppm(path: Path, width: int, height: int, pixels: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     header = f"P6\n{width} {height}\n255\n".encode("ascii")
@@ -142,6 +166,12 @@ def cmd_to_ppm(args: argparse.Namespace) -> None:
     print(f"Wrote {args.output}: {width}x{height}")
 
 
+def cmd_to_png(args: argparse.Namespace) -> None:
+    width, height, pixels = read_lnp(Path(args.input))
+    write_png(Path(args.output), width, height, pixels)
+    print(f"Wrote {args.output}: {width}x{height}")
+
+
 def cmd_sample(args: argparse.Namespace) -> None:
     make_sample(Path(args.output), args.width, args.height)
     print(f"Wrote sample {args.output}: {args.width}x{args.height}")
@@ -164,6 +194,11 @@ def build_parser() -> argparse.ArgumentParser:
     to_ppm.add_argument("input")
     to_ppm.add_argument("output")
     to_ppm.set_defaults(func=cmd_to_ppm)
+
+    to_png = sub.add_parser("to-png", help="convert .lnp to PNG")
+    to_png.add_argument("input")
+    to_png.add_argument("output")
+    to_png.set_defaults(func=cmd_to_png)
 
     sample = sub.add_parser("sample", help="create a small galaxy .lnp sample")
     sample.add_argument("output")
