@@ -411,16 +411,22 @@ static void run_command(const char* cmd) {
         if (ramfs_rm(arg)) vga_writeln("Removed.");
         else vga_writeln("Cannot remove. File missing or folder not empty.");
     } else if (streq(cmd, "mouse")) {
-        vga_writeln("Mouse driver: isolated safe mode.");
-        vga_writeln("Real PS/2 packets are not enabled yet.");
-        vga_write("Position placeholder: ");
+        mouse_poll();
+        if (mouse_enabled()) vga_writeln("Mouse driver: PS/2 polling enabled.");
+        else vga_writeln("Mouse driver: compiled but disabled.");
+        if (mouse_is_ready()) vga_writeln("Mouse status: ready.");
+        else vga_writeln("Mouse status: safe mode / not initialized.");
+        vga_write("Position: ");
         vga_write("x=");
         vga_putc((char)('0' + (mouse_x() / 10) % 10));
         vga_putc((char)('0' + mouse_x() % 10));
         vga_write(" y=");
         vga_putc((char)('0' + (mouse_y() / 10) % 10));
         vga_putc((char)('0' + mouse_y() % 10));
+        vga_write(" buttons=");
+        vga_putc((char)('0' + mouse_buttons()));
         vga_putc('\n');
+        vga_writeln("Enable test: set NOVA_ENABLE_MOUSE to 1 in drivers/mouse.c");
     } else if (starts_with(cmd, "tlrun ")) {
         command_tlrun(cmd + 6);
     } else if (streq(cmd, "tencle") || starts_with(cmd, "tencle ")) {

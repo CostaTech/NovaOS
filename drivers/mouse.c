@@ -1,23 +1,114 @@
 #include "nova.h"
 
-// Mouse is separate from keyboard from day one.
-// For now it is safely disabled; later we will implement PS/2 mouse packets here,
-// never inside keyboard_read_char().
+#define NOVA_ENABLE_MOUSE 0
+
+#define PS2_DATA 0x60
+#define PS2_STATUS 0x64
+#define PS2_COMMAND 0x64
 
 static int mx = 40;
 static int my = 12;
 static int mb = 0;
+static int mouse_ready = 0;
+
+#if NOVA_ENABLE_MOUSE
+static u8 packet[3];
+static int packet_index = 0;
+
+static int ps2_wait_write(void) {
+    for (int i = 0; i < 100000; i++) {
+        if ((inb(PS2_STATUS) & 0x02) == 0) return 1;
+    }
+    return 0;
+}
+
+static int ps2_wait_read(void) {
+    for (int i = 0; i < 100000; i++) {
+        if (inb(PS2_STATUS) & 0x01) return 1;
+    }
+    return 0;
+}
+
+static void ps2_write_command(u8 value) {
+    if (ps2_wait_write()) outb(PS2_COMMAND, value);
+}
+
+static void ps2_write_data(u8 value) {
+    if (ps2_wait_write()) outb(PS2_DATA, value);
+}
+
+static u8 ps2_read_data(void) {
+    if (!ps2_wait_read()) return 0;
+    return inb(PS2_DATA);
+}
+
+static void mouse_write(u8 value) {
+    ps2_write_command(0xD4);
+    ps2_write_data(value);
+}
+
+static void clamp_position(void) {
+    if (mx < 0) mx = 0;
+    if (my < 0) my = 0;
+    if (mx > 79) mx = 79;
+    if (my > 24) my = 24;
+}
+#endif
 
 void mouse_init(void) {
     mx = 40;
     my = 12;
     mb = 0;
+    mouse_ready = 0;
+
+#if NOVA_ENABLE_MOUSE
+    packet_index = 0;
+    ps2_write_command(0xA8);
+    ps2_write_command(0x20);
+    u8 config = ps2_read_data();
+    config |= 0x02;
+    config &= (u8)~0x20;
+    ps2_write_command(0x60);
+    ps2_write_data(config);
+
+    mouse_write(0xF6);
+    (void)ps2_read_data();
+    mouse_write(0xF4);
+    (void)ps2_read_data();
+    mouse_ready = 1;
+#endif
 }
 
 void mouse_poll(void) {
-    // TODO(Costa): real mouse driver goes here, separated from keyboard.
+#if NOVA_ENABLE_MOUSE
+    if (!mouse_ready) return;
+
+    while (inb(PS2_STATUS) & 0x01) {
+        u8 status = inb(PS2_STATUS);
+        u8 data = inb(PS2_DATA);
+
+        if ((status & 0x20) == 0) continue;
+        if (packet_index == 0 && (data & 0x08) == 0) continue;
+        packet[packet_index++] = data;
+
+        if (packet_index < 3) continue;
+        packet_index = 0;
+
+        int dx = (int)packet[1];
+        int dy = (int)packet[2];
+        if (packet[0] & 0x10) dx -= 256;
+        if (packet[0] & 0x20) dy -= 256;
+
+        mx += dx / 8;
+        my -= dy / 8;
+        mb = packet[0] & 0x07;
+        clamp_position();
+    }
+#endif
 }
 
 int mouse_x(void) { return mx; }
 int mouse_y(void) { return my; }
 int mouse_buttons(void) { return mb; }
+int mouse_enabled(void) { return NOVA_ENABLE_MOUSE; }
+int mouse_is_ready(void) { return mouse_ready; }

@@ -29,6 +29,8 @@ void mouse_poll(void);
 int mouse_x(void);
 int mouse_y(void);
 int mouse_buttons(void);
+int mouse_enabled(void);
+int mouse_is_ready(void);
 
 void framebuffer_init(u32 magic, u32 mbi_addr);
 int framebuffer_ready(void);
