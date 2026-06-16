@@ -44,6 +44,14 @@ static void draw_footer(const char* text) {
     if (text) vga_write_at(68, 1, text, 0x1E);
 }
 
+static void draw_top_bar(void) {
+    vga_write_at(0, 0, "                                                                                ", 0x30);
+    vga_write_at(2, 1, "NOVAOS // DESKTOP", 0x3E);
+    vga_write_at(24, 1, "User:", 0x3A);
+    vga_write_at(30, 1, session_username(), 0x3B);
+    write_right(63, 1, AUTHOR, 0x3A);
+}
+
 static void draw_satellite_logo(int x, int y) {
     vga_write_at(x + 2, y, " .-. ", 0x1B);
     vga_write_at(x, y + 1, "-=[##]=-", 0x1E);
@@ -76,9 +84,7 @@ void desktop_draw() {
     vga_clear(0x10);
     draw_stars();
 
-    vga_write_at(0, 0, "                                                                                ", 0x30);
-    vga_write_at(2, 1, "NOVAOS // DESKTOP", 0x3E);
-    write_right(63, 1, AUTHOR, 0x3A);
+    draw_top_bar();
     draw_satellite_logo(67, 3);
 
     box(2, 3, 60, 15, " Nova Workspace ", 0x1E);
@@ -95,9 +101,11 @@ void desktop_draw() {
 
     box(64, 9, 14, 9, " Status ", 0x1A);
     vga_write_at(66, 11, "Kernel OK", 0x1A);
-    vga_write_at(66, 12, "NovaFS RAM", 0x1B);
+    if (storage_ready()) vga_write_at(66, 12, "Storage OK", 0x1A);
+    else vga_write_at(66, 12, "Storage Safe", 0x1E);
     if (mouse_enabled()) vga_write_at(66, 13, "Mouse ON", 0x1A);
     else vga_write_at(66, 13, "Mouse OFF", 0x1C);
+    vga_write_at(66, 14, "NovaFS RAM", 0x1B);
     vga_write_at(66, 15, "TencleLang", 0x1E);
 
     draw_footer("Ready");
@@ -195,7 +203,8 @@ static void settings_app() {
     vga_write_at(4, 6, "Input: keyboard stable, mouse isolated", 0x1F);
     vga_write_at(4, 7, "Boot: GRUB Multiboot", 0x1F);
     vga_write_at(4, 8, "Images: planned .lnp Nova Picture", 0x1F);
-    vga_write_at(4, 9, "Mouse: isolated driver, real packets later", 0x1F);
+    vga_write_at(4, 9, storage_status_text(), 0x1F);
+    vga_write_at(4, 10, "Mouse: filtered PS/2 packets, sensitivity tuned", 0x1F);
     vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
 }
 

@@ -39,6 +39,13 @@ void framebuffer_clear(u32 color);
 void framebuffer_rect(int x, int y, int w, int h, u32 color);
 void framebuffer_demo(void);
 
+void storage_init(void);
+int storage_ready(void);
+const char* storage_status_text(void);
+
+void session_set_username(const char* name);
+const char* session_username(void);
+
 void ramfs_init(void);
 const char* ramfs_pwd(void);
 int ramfs_mkdir(const char* name);

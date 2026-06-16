@@ -94,6 +94,7 @@ static void print_help_core() {
     help_line("help", "show help categories");
     help_line("help <category>", "show one help category");
     help_line("about", "show system information");
+    help_line("storage", "show safe storage status");
     help_line("clear", "clear the terminal screen");
     help_line("again", "repeat last command");
     help_line("desktop", "return to the desktop");
@@ -405,6 +406,10 @@ static void run_command(const char* cmd) {
     } else if (streq(cmd, "about")) {
         vga_writeln("NovaOS - created by CostaTech.");
         vga_writeln("Built with Assembly, C and C++.");
+    } else if (streq(cmd, "storage")) {
+        vga_writeln(storage_status_text());
+        if (storage_ready()) vga_writeln("Next phase: controlled sector read/write driver.");
+        else vga_writeln("NovaOS will keep writes disabled until a safe disk target exists.");
     } else if (streq(cmd, "clear")) {
         terminal_screen();
         return;

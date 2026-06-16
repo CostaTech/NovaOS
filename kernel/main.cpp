@@ -4,6 +4,22 @@ void desktop_loop();
 void ramfs_init();
 void tenclelang_init();
 
+static char active_user[32] = "guest";
+
+void session_set_username(const char* name) {
+    int i = 0;
+    if (!name || !name[0]) name = "guest";
+    while (name[i] && i < 31) {
+        active_user[i] = name[i];
+        i++;
+    }
+    active_user[i] = 0;
+}
+
+const char* session_username(void) {
+    return active_user;
+}
+
 static void login_screen() {
     char username[32];
     int len = 0;
@@ -46,6 +62,8 @@ static void login_screen() {
         }
     }
 
+    session_set_username(username);
+
     vga_clear(0x10);
     vga_write_at(26, 10, "Welcome to NovaOS,", 0x1E);
     vga_write_at(45, 10, username, 0x1B);
@@ -60,6 +78,7 @@ extern "C" void kernel_main(u32 magic, u32 mbi_addr) {
     framebuffer_init(magic, mbi_addr);
     keyboard_init();
     mouse_init();
+    storage_init();
     ramfs_init();
     tenclelang_init();
 

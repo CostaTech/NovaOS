@@ -205,6 +205,26 @@ Stabile quando:
 - Terminale puo' leggere file
 - i file ufficiali ci sono anche su PC reale live USB
 
+## Fase 4.5: Storage persistente sicuro
+
+Obiettivo: salvare dati senza rischiare di rovinare dischi reali.
+
+Ordine obbligatorio:
+
+- rilevare bus/storage in modalita' sicura
+- comando `storage` per diagnostica
+- nessuna scrittura finche' non esiste un target sicuro
+- leggere settori in modo controllato
+- scrivere solo su disco dati NovaOS o immagine dedicata
+- salvare `/home` e impostazioni utente
+- login con username/password persistenti
+
+Stabile quando:
+
+- QEMU salva e ricarica `/home`
+- VirtualBox salva e ricarica `/home`
+- PC reale non viene mai scritto se non confermato e riconosciuto
+
 ## Fase 5: Desktop e app
 
 Obiettivo: NovaOS deve sembrare un OS, non un terminale colorato.
@@ -218,6 +238,20 @@ App base:
 - Text Editor
 - System Info
 - App Launcher
+
+## Fase 5.5: Glow up desktop
+
+Obiettivo: rendere il desktop bello e utile senza perdere stabilita'.
+
+Da fare:
+
+- mostrare utente loggato
+- mostrare stato storage
+- icone piu' ordinate
+- finestre migliori
+- app cliccabili con mouse reale
+- status bar piu' chiara
+- tema Nova/galassia piu' riconoscibile
 - TencleLang Runner
 
 Desktop:

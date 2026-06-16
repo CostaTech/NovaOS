@@ -96,7 +96,7 @@ void mouse_poll(void) {
         u8 data = inb(PS2_DATA);
 
         if ((status & 0x20) == 0) continue;
-        if (packet_index == 0 && (data & 0x08) == 0) continue;
+        if (packet_index == 0 && (data & 0xC8) != 0x08) continue;
         packet[packet_index++] = data;
 
         if (packet_index < 3) continue;
@@ -110,15 +110,15 @@ void mouse_poll(void) {
         if (packet[0] & 0x10) dx -= 256;
         if (packet[0] & 0x20) dy -= 256;
 
-        if (abs_int(dx) > 80 || abs_int(dy) > 80) continue;
+        if (abs_int(dx) > 50 || abs_int(dy) > 50) continue;
 
         accum_x += dx;
         accum_y += dy;
 
-        while (accum_x >= 3) { mx++; accum_x -= 3; }
-        while (accum_x <= -3) { mx--; accum_x += 3; }
-        while (accum_y >= 3) { my--; accum_y -= 3; }
-        while (accum_y <= -3) { my++; accum_y += 3; }
+        while (accum_x >= 2) { mx++; accum_x -= 2; }
+        while (accum_x <= -2) { mx--; accum_x += 2; }
+        while (accum_y >= 2) { my--; accum_y -= 2; }
+        while (accum_y <= -2) { my++; accum_y += 2; }
 
         mb = packet[0] & 0x07;
         clamp_position();
