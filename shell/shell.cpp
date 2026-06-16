@@ -17,6 +17,15 @@ static int starts_with(const char* text, const char* prefix) {
     return 1;
 }
 
+static int ends_with(const char* text, const char* suffix) {
+    int text_len = 0;
+    int suffix_len = 0;
+    while (text && text[text_len]) text_len++;
+    while (suffix && suffix[suffix_len]) suffix_len++;
+    if (suffix_len > text_len) return 0;
+    return streq(text + text_len - suffix_len, suffix);
+}
+
 static const char* skip_spaces(const char* text) {
     while (*text == ' ') text++;
     return text;
@@ -34,6 +43,17 @@ static void copy_text(char* dst, const char* src, int max) {
         i++;
     }
     dst[i] = 0;
+}
+
+static void make_tlang_filename(char* dst, const char* name, int max) {
+    copy_text(dst, skip_spaces(name), max);
+    if (ends_with(dst, ".tlang")) return;
+
+    int len = 0;
+    while (dst[len]) len++;
+    const char* ext = ".tlang";
+    for (int i = 0; ext[i] && len < max - 1; i++) dst[len++] = ext[i];
+    dst[len] = 0;
 }
 
 static void terminal_screen() {
@@ -119,6 +139,9 @@ static void print_help_fs() {
 static void print_help_lang() {
     vga_set_color(0x0B);
     vga_writeln("TencleLang commands");
+    help_line("apps", "list official .tlang apps in /apps");
+    help_line("runapp <name>", "run an app from /apps, .tlang optional");
+    help_line("newtl <file>", "create a small TencleLang starter file");
     help_line("tencle", "show TencleLang status");
     help_line("tencle help", "show TencleLang syntax");
     help_line("tencle sample", "run a built-in TencleLang sample");
@@ -130,19 +153,18 @@ static void print_help_lang() {
     vga_writeln("Syntax: int << func >>(name)");
     vga_writeln("Syntax: << ! >func> if n > 2 { ... }");
     vga_writeln("Syntax: <<While>>! <on> n < 5 { ... }");
-    vga_writeln("Try: cd apps  then  tlrun hello.tlang");
+    vga_writeln("Try: apps  then  runapp calculator");
 }
 
 static void print_help_apps() {
     vga_set_color(0x0E);
     vga_writeln("Desktop apps");
-    help_line("F", "Files app");
-    help_line("T", "Terminal app");
-    help_line("S", "Settings app");
-    help_line("A", "About app");
-    help_line("G", "Galaxy app");
-    help_line("M", "Games launcher");
-    help_line("C", "Calculator app");
+    help_line("mouse click", "open desktop icons from the dock");
+    help_line("apps", "list official TencleLang apps");
+    help_line("runapp calculator", "open the calculator from Terminal");
+    help_line("runapp settings", "open the settings app from Terminal");
+    help_line("runapp documentation", "open the TencleLang documentation app");
+    help_line("desktop", "return from Terminal to Desktop");
 }
 
 static void print_help_input() {
@@ -369,11 +391,71 @@ static void command_tlrun(const char* args) {
     else vga_writeln("[TencleLang] Finished with errors.");
 }
 
+static void command_apps() {
+    int old_dir = ramfs_current_id();
+    ramfs_cd("/");
+    if (!ramfs_cd("apps")) {
+        ramfs_set_current(old_dir);
+        vga_writeln("/apps folder not found.");
+        return;
+    }
+
+    vga_set_color(0x0E);
+    vga_writeln("Official TencleLang apps");
+    vga_set_color(0x0F);
+    int count = ramfs_child_count();
+    for (int i = 0; i < count; i++) {
+        if (!ramfs_child_is_dir(i)) {
+            vga_write("  runapp ");
+            vga_writeln(ramfs_child_name(i));
+        }
+    }
+    ramfs_set_current(old_dir);
+}
+
+static void command_runapp(const char* args) {
+    char filename[32];
+    make_tlang_filename(filename, args, 32);
+    if (!has_arg(filename)) {
+        vga_writeln("Usage: runapp <name>");
+        return;
+    }
+
+    int old_dir = ramfs_current_id();
+    ramfs_cd("/");
+    if (!ramfs_cd("apps")) {
+        ramfs_set_current(old_dir);
+        vga_writeln("/apps folder not found.");
+        return;
+    }
+
+    command_tlrun(filename);
+    ramfs_set_current(old_dir);
+}
+
+static void command_newtl(const char* args) {
+    char filename[32];
+    make_tlang_filename(filename, args, 32);
+    if (!has_arg(filename)) {
+        vga_writeln("Usage: newtl <file.tlang>");
+        return;
+    }
+
+    const char* template_code = "var msg = \"My NovaOS TencleLang app\"\nint << func >>(msg)";
+    if (ramfs_create_file(filename, template_code)) {
+        vga_write("Created ");
+        vga_writeln(filename);
+        vga_writeln("Run it with: tlrun <file.tlang>");
+    } else {
+        vga_writeln("Cannot create TencleLang file. Check name or duplicate.");
+    }
+}
+
 static void command_tencle(const char* args) {
     args = skip_spaces(args);
     if (!has_arg(args)) {
         vga_writeln("TencleLang runtime is inside NovaOS.");
-        vga_writeln("Use: tencle help, tencle sample, tlrun <file.tlang>");
+        vga_writeln("Use: apps, runapp <name>, newtl <file>, tlrun <file.tlang>");
         return;
     }
     if (streq(args, "help")) {
@@ -469,6 +551,12 @@ static void run_command(const char* cmd) {
         vga_writeln("Mouse is filtered to avoid random real-hardware packets.");
     } else if (starts_with(cmd, "tlrun ")) {
         command_tlrun(cmd + 6);
+    } else if (streq(cmd, "apps")) {
+        command_apps();
+    } else if (starts_with(cmd, "runapp ")) {
+        command_runapp(cmd + 7);
+    } else if (starts_with(cmd, "newtl ")) {
+        command_newtl(cmd + 6);
     } else if (streq(cmd, "tencle") || starts_with(cmd, "tencle ")) {
         command_tencle(cmd + 6);
     } else if (streq(cmd, "reboot")) {

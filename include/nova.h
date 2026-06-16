@@ -56,6 +56,7 @@ int ramfs_rename(const char* old_name, const char* new_name);
 const char* ramfs_read_file(const char* name);
 int ramfs_write_file(const char* name, const char* content);
 int ramfs_current_id(void);
+int ramfs_set_current(int id);
 int ramfs_total_slots(void);
 int ramfs_entry_used(int id);
 int ramfs_entry_parent(int id);
