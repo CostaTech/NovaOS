@@ -2,7 +2,6 @@
 
 void shell_run();
 
-static const char* OS_NAME = "NovaOS";
 static const char* AUTHOR = "CostaTech";
 
 static int text_len(const char* text) {
@@ -52,37 +51,55 @@ static void draw_satellite_logo(int x, int y) {
     vga_write_at(x + 1, y + 3, "NOVA LINK", 0x1A);
 }
 
+static void draw_icon(int x, int y, const char* key, const char* art1, const char* art2, const char* label, u8 color) {
+    vga_write_at(x, y, "+--------+", color);
+    vga_write_at(x, y + 1, "|        |", color);
+    vga_write_at(x, y + 2, "|        |", color);
+    vga_write_at(x, y + 3, "+--------+", color);
+    vga_write_at(x + 2, y + 1, art1, color);
+    vga_write_at(x + 2, y + 2, art2, color);
+    vga_write_at(x + 1, y + 4, key, 0x1F);
+    vga_write_at(x + 4, y + 4, label, 0x1F);
+}
+
+static void draw_stars(void) {
+    for (int y = 3; y < 23; y++) {
+        for (int x = 1; x < 79; x++) {
+            int v = (x * 13 + y * 17) % 71;
+            if (v == 0) vga_write_at(x, y, ".", 0x18);
+            else if (v == 5) vga_write_at(x, y, "+", 0x19);
+        }
+    }
+}
+
 void desktop_draw() {
-    vga_clear(0x1F);
+    vga_clear(0x10);
+    draw_stars();
+
     vga_write_at(0, 0, "                                                                                ", 0x30);
-    vga_write_at(2, 1, OS_NAME, 0x1E);
-    write_right(63, 1, AUTHOR, 0x1A);
-    draw_satellite_logo(66, 3);
+    vga_write_at(2, 1, "NOVAOS // DESKTOP", 0x3E);
+    write_right(63, 1, AUTHOR, 0x3A);
+    draw_satellite_logo(67, 3);
 
-    box(2, 3, 20, 12, " Apps ", 0x1E);
-    vga_write_at(4, 5, "[F] Files", 0x1B);
-    vga_write_at(4, 6, "[T] Terminal", 0x1A);
-    vga_write_at(4, 7, "[S] Settings", 0x1D);
-    vga_write_at(4, 8, "[A] About", 0x1E);
-    vga_write_at(4, 9, "[R] Reboot", 0x1C);
-    vga_write_at(4, 10, "[P] Shutdown", 0x1C);
-    vga_write_at(4, 11, "[G] Galaxy", 0x1D);
-    vga_write_at(4, 13, "NovaFS online", 0x1A);
+    box(2, 3, 60, 15, " Nova Workspace ", 0x1E);
+    draw_icon(5, 5, "F", " /--", "[__]", "Files", 0x1B);
+    draw_icon(18, 5, "T", ">__", "|__", "Term", 0x1A);
+    draw_icon(31, 5, "S", "{##", " ##", "Set", 0x1D);
+    draw_icon(44, 5, "A", "NVA", " OS", "About", 0x1E);
 
-    box(25, 3, 39, 14, " Nova Desktop ", 0x1E);
-    vga_write_at(27, 5, "NovaOS is created by", 0x1F);
-    vga_write_at(27, 6, "CostaTech.", 0x1A);
-    vga_write_at(27, 8, "Desktop and Terminal are", 0x1B);
-    vga_write_at(27, 9, "separate apps.", 0x1B);
-    vga_write_at(27, 11, "Not Linux. Not Windows.", 0x1E);
-    vga_write_at(27, 12, "Own boot loader + kernel.", 0x1E);
-    vga_write_at(27, 14, "Choose an app with keyboard.", 0x1D);
+    draw_icon(5, 12, "G", ".*.", "***", "Galaxy", 0x1D);
+    draw_icon(18, 12, "R", "[>>", " >>", "Reboot", 0x1C);
+    draw_icon(31, 12, "P", "[--", " --", "Power", 0x1C);
 
-    box(2, 16, 62, 6, " System Status ", 0x1A);
-    vga_write_at(4, 18, "Kernel: active", 0x1A);
-    vga_write_at(24, 18, "NovaFS: RAM mode", 0x1B);
-    vga_write_at(45, 18, "Input: keyboard", 0x1D);
-    vga_write_at(4, 20, "Tip: press T and type help for the command deck.", 0x1E);
+    box(64, 9, 14, 9, " Status ", 0x1A);
+    vga_write_at(66, 11, "Kernel OK", 0x1A);
+    vga_write_at(66, 12, "NovaFS RAM", 0x1B);
+    if (mouse_enabled()) vga_write_at(66, 13, "Mouse ON", 0x1A);
+    else vga_write_at(66, 13, "Mouse OFF", 0x1C);
+    vga_write_at(66, 15, "TencleLang", 0x1E);
+
+    box(2, 19, 76, 4, " Mission ", 0x1B);
+    vga_write_at(4, 21, "Build apps in TencleLang. Use keyboard shortcuts until mouse is enabled.", 0x1F);
 
     draw_footer("Ready");
 }
