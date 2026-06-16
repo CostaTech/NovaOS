@@ -2,6 +2,8 @@
 
 void shell_run();
 
+static void run_tlang_app(const char* filename);
+
 static const char* AUTHOR = "CostaTech";
 
 static int text_len(const char* text) {
@@ -34,7 +36,7 @@ static void box(int x, int y, int w, int h, const char* title, u8 color) {
 
 static void draw_footer(const char* text) {
     vga_write_at(0, 23, "================================================================================", 0x30);
-    vga_write_at(0, 24, "[F]Files [T]Terminal [S]Settings [C]Calc [G]Galaxy [M]Games [A]About", 0x3E);
+    vga_write_at(0, 24, "F Files T Term S Set C Calc N Notes P Paint D Docs O Tour H Hello M Games", 0x3E);
     if (text) vga_write_at(66, 24, text, 0x3B);
 }
 
@@ -54,11 +56,10 @@ static void draw_satellite_logo(int x, int y) {
     vga_write_at(x + 1, y + 3, "NOVA LINK", 0x1A);
 }
 
-static void draw_dock_icon(int x, int y, const char* key, const char* art, const char* label, u8 color) {
-    vga_write_at(x, y, "[     ]", color);
-    vga_write_at(x + 2, y, art, color);
-    vga_write_at(x, y + 1, key, 0x1E);
-    vga_write_at(x + 3, y + 1, label, 0x1F);
+static void draw_dock_icon(int x, int y, const char* key, const char* label, u8 color) {
+    vga_write_at(x, y, "[ ]", color);
+    vga_write_at(x + 1, y, key, 0x1E);
+    vga_write_at(x + 4, y, label, 0x1F);
 }
 
 static void draw_stars(void) {
@@ -78,7 +79,7 @@ static void draw_stars(void) {
 }
 
 static void draw_resource_panel(void) {
-    box(1, 17, 18, 6, " Resources ", 0x1A);
+    box(1, 16, 18, 7, " Resources ", 0x1A);
     vga_write_at(3, 18, "[DOCS]", 0x1E);
     vga_write_at(3, 19, "[APPS]", 0x1B);
     vga_write_at(3, 20, "[HOME]", 0x1F);
@@ -119,12 +120,17 @@ void desktop_draw() {
     draw_top_bar();
     draw_satellite_logo(68, 3);
 
-    box(1, 3, 18, 13, " Dock ", 0x1A);
-    draw_dock_icon(3, 5, "F", "[]", "Files", 0x1B);
-    draw_dock_icon(3, 7, "T", ">_", "Terminal", 0x1A);
-    draw_dock_icon(3, 9, "C", "##", "Calc", 0x1E);
-    draw_dock_icon(3, 11, "G", "**", "Galaxy", 0x1D);
-    draw_dock_icon(3, 13, "M", "<>", "Games", 0x1D);
+    box(1, 3, 18, 12, " Apps ", 0x1A);
+    draw_dock_icon(3, 4, "F", "Files", 0x1B);
+    draw_dock_icon(3, 5, "T", "Terminal", 0x1A);
+    draw_dock_icon(3, 6, "S", "Settings", 0x1D);
+    draw_dock_icon(3, 7, "C", "Calc", 0x1E);
+    draw_dock_icon(3, 8, "N", "Notes", 0x1B);
+    draw_dock_icon(3, 9, "P", "Paint", 0x1D);
+    draw_dock_icon(3, 10, "D", "Docs", 0x1E);
+    draw_dock_icon(3, 11, "O", "Tour", 0x1A);
+    draw_dock_icon(3, 12, "H", "Hello", 0x1F);
+    draw_dock_icon(3, 13, "M", "Games", 0x1D);
 
     draw_calendar_panel();
     draw_note_window();
@@ -191,30 +197,9 @@ static void galaxy_app() {
 
 
 static void games_app() {
-    vga_clear(0x1F);
-    vga_write_at(2, 1, "NovaOS / Games", 0x1E);
-    box(2, 3, 74, 17, " Games Launcher ", 0x1E);
-    vga_write_at(4, 5, "Games are planned as TencleLang apps.", 0x1F);
-    vga_write_at(4, 7, "Folder:", 0x1A);
-    vga_write_at(13, 7, "/games", 0x1B);
-    vga_write_at(4, 9, "Try in Terminal:", 0x1E);
-    vga_write_at(6, 11, "cd /", 0x1F);
-    vga_write_at(6, 12, "cd games", 0x1F);
-    vga_write_at(6, 13, "tlrun hello_game.tlang", 0x1F);
-    vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
-}
-
-static void settings_app() {
-    vga_clear(0x1F);
-    vga_write_at(2, 1, "NovaOS / Settings", 0x1E);
-    box(2, 3, 74, 17, " Settings ", 0x1E);
-    vga_write_at(4, 5, "Theme: Nova Blue", 0x1F);
-    vga_write_at(4, 6, "Input: keyboard stable, mouse isolated", 0x1F);
-    vga_write_at(4, 7, "Boot: GRUB Multiboot", 0x1F);
-    vga_write_at(4, 8, "Images: planned .lnp Nova Picture", 0x1F);
-    vga_write_at(4, 9, storage_status_text(), 0x1F);
-    vga_write_at(4, 10, "Mouse: filtered PS/2 packets, sensitivity tuned", 0x1F);
-    vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
+    ramfs_cd("/");
+    ramfs_cd("games");
+    files_app();
 }
 
 static void about_app() {
@@ -273,11 +258,16 @@ static int inside_rect(int px, int py, int x, int y, int w, int h) {
 }
 
 static char icon_at(int x, int y) {
-    if (inside_rect(x, y, 3, 5, 14, 2)) return 'f';
-    if (inside_rect(x, y, 3, 7, 14, 2)) return 't';
-    if (inside_rect(x, y, 3, 9, 14, 2)) return 'c';
-    if (inside_rect(x, y, 3, 11, 14, 2)) return 'g';
-    if (inside_rect(x, y, 3, 13, 14, 2)) return 'm';
+    if (inside_rect(x, y, 3, 4, 14, 1)) return 'f';
+    if (inside_rect(x, y, 3, 5, 14, 1)) return 't';
+    if (inside_rect(x, y, 3, 6, 14, 1)) return 's';
+    if (inside_rect(x, y, 3, 7, 14, 1)) return 'c';
+    if (inside_rect(x, y, 3, 8, 14, 1)) return 'n';
+    if (inside_rect(x, y, 3, 9, 14, 1)) return 'p';
+    if (inside_rect(x, y, 3, 10, 14, 1)) return 'd';
+    if (inside_rect(x, y, 3, 11, 14, 1)) return 'o';
+    if (inside_rect(x, y, 3, 12, 14, 1)) return 'h';
+    if (inside_rect(x, y, 3, 13, 14, 1)) return 'm';
     if (inside_rect(x, y, 59, 18, 20, 5)) return 's';
     if (inside_rect(x, y, 36, 4, 41, 15)) return 'a';
     return 0;
@@ -292,8 +282,7 @@ static void open_desktop_action(char action) {
         wait_escape_then_desktop();
         desktop_redraw();
     } else if (action == 's' || action == 'S') {
-        settings_app();
-        wait_escape_then_desktop();
+        run_tlang_app("settings.tlang");
         desktop_redraw();
     } else if (action == 'g' || action == 'G') {
         galaxy_app();
@@ -310,11 +299,23 @@ static void open_desktop_action(char action) {
     } else if (action == 'c' || action == 'C') {
         run_tlang_app("calculator.tlang");
         desktop_redraw();
-    } else if (action == 'r' || action == 'R') {
-        if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
+    } else if (action == 'n' || action == 'N') {
+        run_tlang_app("notes.tlang");
         desktop_redraw();
     } else if (action == 'p' || action == 'P') {
-        if (confirm_action(" Shutdown ", "Do you want to shutdown NovaOS?")) system_shutdown();
+        run_tlang_app("paint.tlang");
+        desktop_redraw();
+    } else if (action == 'd' || action == 'D') {
+        run_tlang_app("documentation.tlang");
+        desktop_redraw();
+    } else if (action == 'o' || action == 'O') {
+        run_tlang_app("tour.tlang");
+        desktop_redraw();
+    } else if (action == 'h' || action == 'H') {
+        run_tlang_app("hello.tlang");
+        desktop_redraw();
+    } else if (action == 'r' || action == 'R') {
+        if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
         desktop_redraw();
     }
 }
@@ -342,7 +343,7 @@ void desktop_loop() {
 
         if (left_down && click_armed && left_stable_ticks >= 3) {
             char action = icon_at(mouse_x(), mouse_y());
-            if (action == 'r' || action == 'p') action = 0;
+            if (action == 'r') action = 0;
             if (action) {
                 click_armed = 0;
                 open_desktop_action(action);
