@@ -10,6 +10,8 @@ static int mx = 40;
 static int my = 12;
 static int mb = 0;
 static int mouse_ready = 0;
+static int accum_x = 0;
+static int accum_y = 0;
 
 #if NOVA_ENABLE_MOUSE
 static u8 packet[3];
@@ -48,10 +50,14 @@ static void mouse_write(u8 value) {
 }
 
 static void clamp_position(void) {
-    if (mx < 0) mx = 0;
-    if (my < 0) my = 0;
-    if (mx > 79) mx = 79;
-    if (my > 24) my = 24;
+    if (mx < 1) mx = 1;
+    if (my < 1) my = 1;
+    if (mx > 78) mx = 78;
+    if (my > 23) my = 23;
+}
+
+static int abs_int(int value) {
+    return value < 0 ? -value : value;
 }
 #endif
 
@@ -60,6 +66,8 @@ void mouse_init(void) {
     my = 12;
     mb = 0;
     mouse_ready = 0;
+    accum_x = 0;
+    accum_y = 0;
 
 #if NOVA_ENABLE_MOUSE
     packet_index = 0;
@@ -94,13 +102,24 @@ void mouse_poll(void) {
         if (packet_index < 3) continue;
         packet_index = 0;
 
+        if (packet[0] & 0x40) continue; // X overflow: ignore bad packet.
+        if (packet[0] & 0x80) continue; // Y overflow: ignore bad packet.
+
         int dx = (int)packet[1];
         int dy = (int)packet[2];
         if (packet[0] & 0x10) dx -= 256;
         if (packet[0] & 0x20) dy -= 256;
 
-        mx += dx / 8;
-        my -= dy / 8;
+        if (abs_int(dx) > 80 || abs_int(dy) > 80) continue;
+
+        accum_x += dx;
+        accum_y += dy;
+
+        while (accum_x >= 6) { mx++; accum_x -= 6; }
+        while (accum_x <= -6) { mx--; accum_x += 6; }
+        while (accum_y >= 6) { my--; accum_y -= 6; }
+        while (accum_y <= -6) { my++; accum_y += 6; }
+
         mb = packet[0] & 0x07;
         clamp_position();
     }
