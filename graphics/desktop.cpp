@@ -56,9 +56,9 @@ static void draw_satellite_logo(int x, int y) {
     vga_write_at(x + 1, y + 3, "NOVA LINK", 0x1A);
 }
 
-static void draw_dock_icon(int x, int y, const char* label, u8 color) {
-    vga_write_at(x, y, "[ ]", color);
-    vga_write_at(x + 1, y, "*", 0x1E);
+static void draw_dock_icon(int x, int y, const char* icon, const char* label, u8 color) {
+    vga_write_at(x, y, "[  ]", color);
+    vga_write_at(x + 1, y, icon, 0x1E);
     vga_write_at(x + 4, y, label, 0x1F);
 }
 
@@ -121,16 +121,16 @@ void desktop_draw() {
     draw_satellite_logo(68, 3);
 
     box(1, 3, 18, 12, " Apps ", 0x1A);
-    draw_dock_icon(3, 4, "Files", 0x1B);
-    draw_dock_icon(3, 5, "Terminal", 0x1A);
-    draw_dock_icon(3, 6, "Settings", 0x1D);
-    draw_dock_icon(3, 7, "Calc", 0x1E);
-    draw_dock_icon(3, 8, "Notes", 0x1B);
-    draw_dock_icon(3, 9, "Paint", 0x1D);
-    draw_dock_icon(3, 10, "Docs", 0x1E);
-    draw_dock_icon(3, 11, "Tour", 0x1A);
-    draw_dock_icon(3, 12, "Hello", 0x1F);
-    draw_dock_icon(3, 13, "Games", 0x1D);
+    draw_dock_icon(3, 4, "/", "Files", 0x1B);
+    draw_dock_icon(3, 5, ">", "Terminal", 0x1A);
+    draw_dock_icon(3, 6, "#", "Settings", 0x1D);
+    draw_dock_icon(3, 7, "+", "Calc", 0x1E);
+    draw_dock_icon(3, 8, "=", "Notes", 0x1B);
+    draw_dock_icon(3, 9, "*", "Paint", 0x1D);
+    draw_dock_icon(3, 10, "?", "Docs", 0x1E);
+    draw_dock_icon(3, 11, "@", "Tour", 0x1A);
+    draw_dock_icon(3, 12, "!", "Hello", 0x1F);
+    draw_dock_icon(3, 13, "^", "Games", 0x1D);
 
     draw_calendar_panel();
     draw_note_window();
