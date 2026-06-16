@@ -103,7 +103,7 @@ void desktop_draw() {
 
 static void draw_mouse_cursor(void) {
     if (!mouse_enabled() || !mouse_is_ready()) return;
-    vga_write_at(mouse_x(), mouse_y(), "+", 0x4F);
+    vga_write_at(mouse_x(), mouse_y(), ">", 0x4F);
 }
 
 static void desktop_redraw(void) {
@@ -276,7 +276,7 @@ void desktop_loop() {
             }
         }
 
-        if ((mouse_x() != last_x || mouse_y() != last_y || mouse_buttons() != last_buttons) && idle_ticks > 2500) {
+        if ((mouse_x() != last_x || mouse_y() != last_y || mouse_buttons() != last_buttons) && idle_ticks > 800) {
             last_x = mouse_x();
             last_y = mouse_y();
             last_buttons = mouse_buttons();
