@@ -16,9 +16,9 @@ ISO_DIR := iso
 KERNEL := $(BUILD)/NovaOS.kernel
 ISO := NovaOS.iso
 
-ASM_OBJS := $(BUILD)/entry.o
+ASM_OBJS := $(BUILD)/entry.o $(BUILD)/interrupts_asm.o
 C_OBJS := $(BUILD)/vga.o $(BUILD)/ports.o $(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/framebuffer.o $(BUILD)/storage.o
-CPP_OBJS := $(BUILD)/main.o $(BUILD)/panic.o $(BUILD)/power.o $(BUILD)/desktop.o $(BUILD)/shell.o $(BUILD)/ramfs.o $(BUILD)/tenclelang.o
+CPP_OBJS := $(BUILD)/main.o $(BUILD)/panic.o $(BUILD)/power.o $(BUILD)/interrupts.o $(BUILD)/desktop.o $(BUILD)/shell.o $(BUILD)/ramfs.o $(BUILD)/tenclelang.o
 OBJS := $(ASM_OBJS) $(C_OBJS) $(CPP_OBJS)
 
 .PHONY: all iso run clean tree
@@ -29,6 +29,9 @@ $(BUILD):
 	mkdir -p $(BUILD)
 
 $(BUILD)/entry.o: boot/entry.asm | $(BUILD)
+	$(NASM) -f elf32 $< -o $@
+
+$(BUILD)/interrupts_asm.o: boot/interrupts.asm | $(BUILD)
 	$(NASM) -f elf32 $< -o $@
 
 $(BUILD)/%.o: drivers/%.c | $(BUILD)

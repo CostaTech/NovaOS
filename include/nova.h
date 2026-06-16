@@ -66,6 +66,7 @@ const char* ramfs_child_name(int index);
 int ramfs_child_is_dir(int index);
 
 void kernel_panic(const char* message, const char* file, int line);
+void interrupts_init(void);
 void system_reboot(void);
 void system_shutdown(void);
 
