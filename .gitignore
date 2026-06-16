@@ -1,0 +1,13 @@
+# NovaOS generated build files
+build/
+iso/boot/NovaOS.kernel
+
+# Large generated image; rebuild with ./build_NovaOS.sh
+NovaOS.iso
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*~
+.DS_Store

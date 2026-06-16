@@ -1,0 +1,208 @@
+#include "nova.h"
+
+void shell_run();
+
+static const char* OS_NAME = "NovaOS";
+static const char* AUTHOR = "CostaTech and Andryx";
+
+static int text_len(const char* text) {
+    int n = 0;
+    while (text && text[n]) n++;
+    return n;
+}
+
+static void write_right(int right_col, int y, const char* text, u8 color) {
+    int x = right_col - text_len(text) + 1;
+    if (x < 0) x = 0;
+    vga_write_at(x, y, text, color);
+}
+
+static void box(int x, int y, int w, int h, const char* title, u8 color) {
+    for (int i = 0; i < w; i++) {
+        vga_write_at(x + i, y, "-", color);
+        vga_write_at(x + i, y + h - 1, "-", color);
+    }
+    for (int j = 0; j < h; j++) {
+        vga_write_at(x, y + j, "|", color);
+        vga_write_at(x + w - 1, y + j, "|", color);
+    }
+    vga_write_at(x, y, "+", color);
+    vga_write_at(x + w - 1, y, "+", color);
+    vga_write_at(x, y + h - 1, "+", color);
+    vga_write_at(x + w - 1, y + h - 1, "+", color);
+    if (title) vga_write_at(x + 2, y, title, color);
+}
+
+static void draw_footer(const char* text) {
+    vga_write_at(0, 24, "                                                                                ", 0x30);
+    vga_write_at(2, 24, "F Files", 0x3E);
+    vga_write_at(12, 24, "T Terminal", 0x3B);
+    vga_write_at(25, 24, "S Settings", 0x3D);
+    vga_write_at(38, 24, "A About", 0x3A);
+    vga_write_at(49, 24, "R Reboot", 0x3C);
+    vga_write_at(61, 24, "P Shutdown", 0x3C);
+    vga_write_at(73, 24, "G", 0x3D);
+    if (text) vga_write_at(68, 1, text, 0x1E);
+}
+
+static void draw_satellite_logo(int x, int y) {
+    vga_write_at(x + 2, y, " .-. ", 0x1B);
+    vga_write_at(x, y + 1, "-=[##]=-", 0x1E);
+    vga_write_at(x + 2, y + 2, " `-' ", 0x1B);
+    vga_write_at(x + 1, y + 3, "NOVA LINK", 0x1A);
+}
+
+void desktop_draw() {
+    vga_clear(0x1F);
+    vga_write_at(0, 0, "                                                                                ", 0x30);
+    vga_write_at(2, 1, OS_NAME, 0x1E);
+    write_right(63, 1, AUTHOR, 0x1A);
+    draw_satellite_logo(66, 3);
+
+    box(2, 3, 20, 12, " Apps ", 0x1E);
+    vga_write_at(4, 5, "[F] Files", 0x1B);
+    vga_write_at(4, 6, "[T] Terminal", 0x1A);
+    vga_write_at(4, 7, "[S] Settings", 0x1D);
+    vga_write_at(4, 8, "[A] About", 0x1E);
+    vga_write_at(4, 9, "[R] Reboot", 0x1C);
+    vga_write_at(4, 10, "[P] Shutdown", 0x1C);
+    vga_write_at(4, 11, "[G] Galaxy", 0x1D);
+    vga_write_at(4, 13, "NovaFS online", 0x1A);
+
+    box(25, 3, 39, 14, " Nova Desktop ", 0x1E);
+    vga_write_at(27, 5, "NovaOS is created by", 0x1F);
+    vga_write_at(27, 6, "CostaTech.", 0x1A);
+    vga_write_at(27, 8, "Desktop and Terminal are", 0x1B);
+    vga_write_at(27, 9, "separate apps.", 0x1B);
+    vga_write_at(27, 11, "Not Linux. Not Windows.", 0x1E);
+    vga_write_at(27, 12, "Own boot loader + kernel.", 0x1E);
+    vga_write_at(27, 14, "Choose an app with keyboard.", 0x1D);
+
+    box(2, 16, 62, 6, " System Status ", 0x1A);
+    vga_write_at(4, 18, "Kernel: active", 0x1A);
+    vga_write_at(24, 18, "NovaFS: RAM mode", 0x1B);
+    vga_write_at(45, 18, "Input: keyboard", 0x1D);
+    vga_write_at(4, 20, "Tip: press T and type help for the command deck.", 0x1E);
+
+    draw_footer("Ready");
+}
+
+
+static void files_app() {
+    vga_clear(0x1F);
+    vga_write_at(2, 1, "NovaOS / Files", 0x1E);
+    box(2, 3, 74, 17, " File Manager ", 0x1E);
+    vga_write_at(4, 5, "Current folder:", 0x1F);
+    vga_write_at(20, 5, ramfs_pwd(), 0x1B);
+
+    int count = ramfs_child_count();
+    if (count == 0) {
+        vga_write_at(4, 7, "This folder is empty.", 0x1F);
+    }
+
+    for (int i = 0; i < count && i < 10; i++) {
+        int y = 7 + i;
+        if (ramfs_child_is_dir(i)) vga_write_at(4, y, "[DIR] ", 0x1E);
+        else vga_write_at(4, y, "[FILE]", 0x1B);
+        vga_write_at(12, y, ramfs_child_name(i), 0x1F);
+    }
+
+    vga_write_at(4, 18, "Use Terminal for cd, mkdir, create, cat and rm.", 0x1E);
+    vga_write_at(4, 19, "Press ESC to return to desktop.", 0x1E);
+}
+
+
+static void galaxy_app() {
+    vga_clear(0x0F);
+    vga_write_at(2, 1, "NovaOS / Galaxy", 0x0E);
+    vga_write_at(55, 1, "Text-mode graphic demo", 0x0B);
+
+    for (int y = 3; y < 22; y++) {
+        for (int x = 2; x < 78; x++) {
+            int v = (x * 7 + y * 11) % 37;
+            if (v == 0) vga_write_at(x, y, ".", 0x0B);
+            else if (v == 3) vga_write_at(x, y, "*", 0x0F);
+            else if (v == 9) vga_write_at(x, y, "+", 0x0D);
+        }
+    }
+
+    box(20, 7, 40, 9, " Nova Station ", 0x0E);
+    vga_write_at(25, 10, "NovaOS graphic layer will grow here.", 0x1F);
+    vga_write_at(25, 12, "Next: framebuffer, windows, icons.", 0x1B);
+    vga_write_at(25, 14, "Press ESC to return.", 0x1E);
+}
+
+static void settings_app() {
+    vga_clear(0x1F);
+    vga_write_at(2, 1, "NovaOS / Settings", 0x1E);
+    box(2, 3, 74, 17, " Settings ", 0x1E);
+    vga_write_at(4, 5, "Theme: Nova Blue", 0x1F);
+    vga_write_at(4, 6, "Input: keyboard stable, mouse isolated", 0x1F);
+    vga_write_at(4, 7, "Boot: GRUB Multiboot", 0x1F);
+    vga_write_at(4, 8, "Images: planned .lnp Nova Picture", 0x1F);
+    vga_write_at(4, 9, "Mouse: isolated driver, real packets later", 0x1F);
+    vga_write_at(4, 18, "Press ESC to return to desktop.", 0x1E);
+}
+
+static void about_app() {
+    vga_clear(0x1F);
+    vga_write_at(2, 1, "NovaOS / About", 0x1E);
+    box(2, 3, 74, 17, " About NovaOS ", 0x1E);
+    vga_write_at(4, 5, "NovaOS", 0x1E);
+    vga_write_at(4, 7, "A new operating system built with Assembly, TencleLang, C and C++.", 0x1F);
+    vga_write_at(4, 8, "Created by CostaTech.", 0x0C);
+    vga_write_at(4, 10, "Press ESC to return to desktop.", 0x1E);
+}
+
+static int confirm_action(const char* title, const char* question) {
+    vga_clear(0x1F);
+    box(18, 7, 44, 9, title, 0x1E);
+    vga_write_at(21, 10, question, 0x1F);
+    vga_write_at(21, 12, "Press Y to confirm or N/ESC to cancel.", 0x1E);
+
+    for (;;) {
+        char c = keyboard_read_char();
+        if (c == 'y' || c == 'Y') return 1;
+        if (c == 'n' || c == 'N' || c == 27) return 0;
+    }
+}
+
+static void wait_escape_then_desktop() {
+    for (;;) {
+        char c = keyboard_read_char();
+        if (c == 27) return;
+    }
+}
+
+void desktop_loop() {
+    desktop_draw();
+    for (;;) {
+        char c = keyboard_read_char();
+        if (c == 't' || c == 'T') {
+            shell_run();
+            desktop_draw();
+        } else if (c == 'f' || c == 'F') {
+            files_app();
+            wait_escape_then_desktop();
+            desktop_draw();
+        } else if (c == 's' || c == 'S') {
+            settings_app();
+            wait_escape_then_desktop();
+            desktop_draw();
+        } else if (c == 'g' || c == 'G') {
+            galaxy_app();
+            wait_escape_then_desktop();
+            desktop_draw();
+        } else if (c == 'a' || c == 'A') {
+            about_app();
+            wait_escape_then_desktop();
+            desktop_draw();
+        } else if (c == 'r' || c == 'R') {
+            if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();
+            desktop_draw();
+        } else if (c == 'p' || c == 'P') {
+            if (confirm_action(" Shutdown ", "Do you want to shutdown NovaOS?")) system_shutdown();
+            desktop_draw();
+        }
+    }
+}
