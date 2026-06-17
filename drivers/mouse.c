@@ -8,7 +8,7 @@
 
 #define MOUSE_MAX_PACKETS_PER_POLL 8
 #define MOUSE_MAX_DELTA 18
-#define MOUSE_TEXT_STEP 12
+#define MOUSE_TEXT_STEP 7
 
 static int mx = 40;
 static int my = 12;

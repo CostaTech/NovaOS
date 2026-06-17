@@ -325,8 +325,10 @@ void desktop_loop() {
     int last_x = mouse_x();
     int last_y = mouse_y();
     int last_buttons = mouse_buttons();
-    int left_stable_ticks = 0;
-    int click_armed = 1;
+    int last_left_down = mouse_buttons() & 1;
+    int press_x = 0;
+    int press_y = 0;
+    char press_action = 0;
     int idle_ticks = 0;
 
     for (;;) {
@@ -334,25 +336,33 @@ void desktop_loop() {
         idle_ticks++;
 
         int left_down = mouse_buttons() & 1;
-        if (left_down) {
-            if (left_stable_ticks < 12) left_stable_ticks++;
-        } else {
-            left_stable_ticks = 0;
-            click_armed = 1;
+        if (left_down && !last_left_down) {
+            press_x = mouse_x();
+            press_y = mouse_y();
+            press_action = icon_at(press_x, press_y);
+            if (press_action == 'r') press_action = 0;
         }
 
-        if (left_down && click_armed && left_stable_ticks >= 3) {
-            char action = icon_at(mouse_x(), mouse_y());
-            if (action == 'r') action = 0;
-            if (action) {
-                click_armed = 0;
-                open_desktop_action(action);
+        if (!left_down && last_left_down) {
+            char release_action = icon_at(mouse_x(), mouse_y());
+            int moved_x = mouse_x() - press_x;
+            int moved_y = mouse_y() - press_y;
+            if (moved_x < 0) moved_x = -moved_x;
+            if (moved_y < 0) moved_y = -moved_y;
+
+            if (press_action && release_action == press_action && moved_x <= 1 && moved_y <= 1) {
+                open_desktop_action(press_action);
                 last_x = mouse_x();
                 last_y = mouse_y();
                 last_buttons = mouse_buttons();
+                last_left_down = mouse_buttons() & 1;
+                press_action = 0;
                 continue;
             }
+            press_action = 0;
         }
+
+        last_left_down = left_down;
 
         if ((mouse_x() != last_x || mouse_y() != last_y || mouse_buttons() != last_buttons) && idle_ticks > 800) {
             last_x = mouse_x();
