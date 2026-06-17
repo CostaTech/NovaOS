@@ -71,9 +71,9 @@ void interrupts_init(void);
 void system_reboot(void);
 void system_shutdown(void);
 
-void tenclelang_init(void);
-void tenclelang_help(void);
-int tenclelang_run_source(const char* source);
+void novac_init(void);
+void novac_help(void);
+int novac_run_source(const char* source);
 #define NOVA_PANIC(message) kernel_panic((message), __FILE__, __LINE__)
 
 #ifdef __cplusplus

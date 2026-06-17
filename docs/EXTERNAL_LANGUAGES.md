@@ -1,6 +1,6 @@
 # Linguaggi esterni di NovaOS
 
-Dentro NovaOS l'obiettivo e' avere TencleLang come linguaggio principale per l'utente.
+Dentro NovaOS l'obiettivo e' avere NovaC come linguaggio principale per l'utente.
 
 Fuori NovaOS, nel progetto sorgente, possiamo usare piu' linguaggi per creare tool utili.
 
@@ -57,14 +57,14 @@ Ruolo: script leggibili e generatori.
 
 Esempi:
 
-- creare scheletri di app TencleLang
+- creare scheletri di app NovaC
 - generare documentazione
 - preparare changelog
 
 Tool attuale:
 
 ```bash
-ruby tools/ruby/new_tencle_app.rb Calculator
+ruby tools/ruby/new_novac_app.rb Calculator
 ```
 
 ## Go
@@ -110,6 +110,6 @@ Per NovaOS oggi:
 Boot    = Assembly
 Driver  = C
 Sistema = C++
-Utente  = TencleLang dentro NovaOS
+Utente  = NovaC dentro NovaOS
 Tool    = Python/Ruby/Go/Rust fuori NovaOS
 ```

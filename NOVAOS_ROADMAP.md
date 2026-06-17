@@ -18,7 +18,7 @@ Obiettivi principali:
 - terminale separato dal desktop
 - filesystem con file e app predefinite
 - kernel in C/C++ con boot in Assembly
-- supporto futuro a TencleLang
+- supporto futuro a NovaC
 - percorso verso self-hosting
 
 NovaOS non deve essere solo un terminale. Il terminale e' un'app, non tutto il sistema.
@@ -80,9 +80,9 @@ C++ serve per:
 
 C++ serve per organizzare bene il sistema.
 
-### TencleLang
+### NovaC
 
-TencleLang verra' integrato dopo che il kernel e' stabile.
+NovaC verra' integrato dopo che il kernel e' stabile.
 
 Servira' per:
 
@@ -93,7 +93,7 @@ Servira' per:
 - strumenti interni a NovaOS
 - percorso verso self-hosting
 
-All'inizio TencleLang non deve controllare il kernel. Prima deve essere un'app/strumento stabile.
+All'inizio NovaC non deve controllare il kernel. Prima deve essere un'app/strumento stabile.
 
 ## Obiettivo hardware reale
 
@@ -252,7 +252,7 @@ Da fare:
 - app cliccabili con mouse reale
 - status bar piu' chiara
 - tema Nova/galassia piu' riconoscibile
-- TencleLang Runner
+- NovaC Runner
 
 Desktop:
 
@@ -267,23 +267,23 @@ Stabile quando:
 - l'utente puo' usare NovaOS dal desktop
 - Terminal resta un'app separata
 
-## Fase 6: TencleLang
+## Fase 6: NovaC
 
-Obiettivo: integrare TencleLang in modo ordinato.
+Obiettivo: integrare NovaC in modo ordinato.
 
 Da fare:
 
-- cartella `languages/tenclelang`
-- runner TencleLang
-- esempi `.tl`
+- cartella `languages/novac`
+- runner NovaC
+- esempi `.nc`
 - errori leggibili
 - compilazione verso Assembly o bytecode
-- app TencleLang Runner
+- app NovaC Runner
 
 Stabile quando:
 
-- NovaOS esegue un piccolo script TencleLang
-- TencleLang non rompe il kernel
+- NovaOS esegue un piccolo script NovaC
+- NovaC non rompe il kernel
 
 ## Fase 7: Strumenti di sviluppo dentro NovaOS
 
@@ -294,7 +294,7 @@ Da fare:
 - editor testo
 - file manager
 - terminale
-- runner TencleLang
+- runner NovaC
 - viewer sorgenti
 - log build
 - progetto/app manager
@@ -303,7 +303,7 @@ Piu' avanti:
 
 - assembler dentro NovaOS
 - linker semplice
-- compilatore TencleLang dentro NovaOS
+- compilatore NovaC dentro NovaOS
 - build di app NovaOS dall'interno di NovaOS
 
 ## Fase 8: Self-hosting
@@ -312,9 +312,9 @@ Self-hosting significa che NovaOS puo' costruire parti di se stesso dall'interno
 
 Percorso corretto:
 
-1. NovaOS esegue script TencleLang.
-2. NovaOS modifica file TencleLang.
-3. NovaOS compila TencleLang.
+1. NovaOS esegue script NovaC.
+2. NovaOS modifica file NovaC.
+3. NovaOS compila NovaC.
 4. NovaOS costruisce app interne.
 5. NovaOS costruisce strumenti userland.
 6. Solo molto dopo NovaOS costruisce parti del kernel.

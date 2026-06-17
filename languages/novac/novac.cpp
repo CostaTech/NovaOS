@@ -1,17 +1,17 @@
 #include "nova.h"
 
-struct TencleValue {
+struct NovaCValue {
     int is_string;
     int number;
     char text[48];
 };
 
-struct TencleVar {
+struct NovaCVar {
     char name[24];
-    TencleValue value;
+    NovaCValue value;
 };
 
-static TencleVar vars[16];
+static NovaCVar vars[16];
 static int var_count = 0;
 
 static int starts_with(const char* text, const char* prefix) {
@@ -76,16 +76,16 @@ static int find_var_id(const char* name) {
     return -1;
 }
 
-static TencleValue make_number(int n) {
-    TencleValue v;
+static NovaCValue make_number(int n) {
+    NovaCValue v;
     v.is_string = 0;
     v.number = n;
     v.text[0] = 0;
     return v;
 }
 
-static TencleValue make_string(const char* text) {
-    TencleValue v;
+static NovaCValue make_string(const char* text) {
+    NovaCValue v;
     v.is_string = 1;
     v.number = 0;
     copy_text(v.text, text, 48);
@@ -198,7 +198,7 @@ static int eval_number(const char* expr, int* ok) {
     return 0;
 }
 
-static TencleValue eval_value(const char* expr, int* ok) {
+static NovaCValue eval_value(const char* expr, int* ok) {
     expr = skip_spaces(expr);
     if (*expr == '"') {
         char tmp[48];
@@ -230,7 +230,7 @@ static TencleValue eval_value(const char* expr, int* ok) {
     return make_number(number);
 }
 
-static int set_var(const char* name, TencleValue value) {
+static int set_var(const char* name, NovaCValue value) {
     int id = find_var_id(name);
     if (id < 0) {
         if (var_count >= 16) return 0;
@@ -263,8 +263,8 @@ static int eval_condition(const char* cond) {
 
     int value_left_ok = 0;
     int value_right_ok = 0;
-    TencleValue left_value = eval_value(left_expr, &value_left_ok);
-    TencleValue right_value = eval_value(right_expr, &value_right_ok);
+    NovaCValue left_value = eval_value(left_expr, &value_left_ok);
+    NovaCValue right_value = eval_value(right_expr, &value_right_ok);
 
     if (double_eq && value_left_ok && value_right_ok && left_value.is_string && right_value.is_string) {
         return str_eq(left_value.text, right_value.text);
@@ -330,7 +330,7 @@ static int run_print(const char* line) {
     expr[out] = 0;
 
     int ok = 0;
-    TencleValue value = eval_value(expr, &ok);
+    NovaCValue value = eval_value(expr, &ok);
     if (!ok) return 0;
     if (value.is_string) vga_writeln(value.text);
     else {
@@ -348,7 +348,7 @@ static int run_var(const char* line) {
     line = skip_spaces(line + name_len);
     if (*line != '=') return 0;
     int ok = 0;
-    TencleValue value = eval_value(line + 1, &ok);
+    NovaCValue value = eval_value(line + 1, &ok);
     if (!ok) return 0;
     return set_var(name, value);
 }
@@ -430,7 +430,7 @@ static int run_while(char lines[40][96], int* index, int end) {
         if (!run_lines(lines, *index + 1, block_end)) return 0;
         guard++;
         if (guard > 64) {
-            vga_writeln("[TencleLang] While stopped: too many loops.");
+            vga_writeln("[NovaC] While stopped: too many loops.");
             return 0;
         }
     }
@@ -456,7 +456,7 @@ static int run_lines(char lines[40][96], int start, int end) {
         } else if (starts_with(line, ">> func << else")) {
             continue;
         } else {
-            vga_write("[TencleLang] Unknown line: ");
+            vga_write("[NovaC] Unknown line: ");
             vga_writeln(line);
             return 0;
         }
@@ -464,13 +464,13 @@ static int run_lines(char lines[40][96], int start, int end) {
     return 1;
 }
 
-void tenclelang_init(void) {
+void novac_init(void) {
     // Runtime is ready. Real compiler comes later.
 }
 
-void tenclelang_help(void) {
+void novac_help(void) {
     vga_set_color(0x0E);
-    vga_writeln("TencleLang inside NovaOS");
+    vga_writeln("NovaC inside NovaOS");
     vga_set_color(0x0F);
     vga_writeln("Official syntax now:");
     vga_writeln("  var name = \"text\"");
@@ -481,10 +481,10 @@ void tenclelang_help(void) {
     vga_writeln("  <<While>>! <on> n < 5 { ... }");
 }
 
-int tenclelang_run_source(const char* source) {
+int novac_run_source(const char* source) {
     source = skip_spaces(source);
     if (!source || !source[0]) {
-        vga_writeln("[TencleLang] Empty source.");
+        vga_writeln("[NovaC] Empty source.");
         return 0;
     }
 

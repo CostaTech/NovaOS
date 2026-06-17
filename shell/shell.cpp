@@ -45,13 +45,13 @@ static void copy_text(char* dst, const char* src, int max) {
     dst[i] = 0;
 }
 
-static void make_tlang_filename(char* dst, const char* name, int max) {
+static void make_novac_filename(char* dst, const char* name, int max) {
     copy_text(dst, skip_spaces(name), max);
-    if (ends_with(dst, ".tlang")) return;
+    if (ends_with(dst, ".nc")) return;
 
     int len = 0;
     while (dst[len]) len++;
-    const char* ext = ".tlang";
+    const char* ext = ".nc";
     for (int i = 0; ext[i] && len < max - 1; i++) dst[len++] = ext[i];
     dst[len] = 0;
 }
@@ -99,7 +99,7 @@ static void print_help_index() {
     vga_set_color(0x0F);
     help_line("help core", "base terminal commands");
     help_line("help fs", "filesystem commands");
-    help_line("help lang", "TencleLang commands");
+    help_line("help lang", "NovaC commands");
     help_line("help apps", "desktop apps and shortcuts");
     help_line("help input", "keyboard and mouse info");
     help_line("help power", "reboot and shutdown");
@@ -138,14 +138,14 @@ static void print_help_fs() {
 
 static void print_help_lang() {
     vga_set_color(0x0B);
-    vga_writeln("TencleLang commands");
-    help_line("apps", "list official .tlang apps in /apps");
-    help_line("runapp <name>", "run an app from /apps, .tlang optional");
-    help_line("newtl <file>", "create a small TencleLang starter file");
-    help_line("tencle", "show TencleLang status");
-    help_line("tencle help", "show TencleLang syntax");
-    help_line("tencle sample", "run a built-in TencleLang sample");
-    help_line("tlrun <file>", "run a .tlang file in current folder");
+    vga_writeln("NovaC commands");
+    help_line("apps", "list official .nc apps in /apps");
+    help_line("runapp <name>", "run an app from /apps, .nc optional");
+    help_line("newnc <file>", "create a small NovaC starter file");
+    help_line("novac", "show NovaC status");
+    help_line("novac help", "show NovaC syntax");
+    help_line("novac sample", "run a built-in NovaC sample");
+    help_line("ncrun <file>", "run a .nc file in current folder");
     vga_writeln("Syntax: var name = \"text\"");
     vga_writeln("Syntax: var n = 2 + 3");
     vga_writeln("Syntax: input(name)");
@@ -160,10 +160,10 @@ static void print_help_apps() {
     vga_set_color(0x0E);
     vga_writeln("Desktop apps");
     help_line("mouse click", "open desktop icons from the dock");
-    help_line("apps", "list official TencleLang apps");
+    help_line("apps", "list official NovaC apps");
     help_line("runapp calculator", "open the calculator from Terminal");
     help_line("runapp settings", "open the settings app from Terminal");
-    help_line("runapp documentation", "open the TencleLang documentation app");
+    help_line("runapp documentation", "open the NovaC documentation app");
     help_line("desktop", "return from Terminal to Desktop");
 }
 
@@ -370,25 +370,25 @@ static void command_lnpinfo(const char* args) {
     }
 }
 
-static void command_tlrun(const char* args) {
+static void command_ncrun(const char* args) {
     const char* name = skip_spaces(args);
     if (!has_arg(name)) {
-        vga_writeln("Usage: tlrun <file.tlang>");
+        vga_writeln("Usage: ncrun <file.nc>");
         return;
     }
 
     const char* source = ramfs_read_file(name);
     if (!source) {
-        vga_writeln("TencleLang file not found.");
+        vga_writeln("NovaC file not found.");
         return;
     }
 
     vga_set_color(0x0E);
-    vga_write("[TencleLang] Running ");
+    vga_write("[NovaC] Running ");
     vga_writeln(name);
     vga_set_color(0x0F);
-    if (tenclelang_run_source(source)) vga_writeln("[TencleLang] Done.");
-    else vga_writeln("[TencleLang] Finished with errors.");
+    if (novac_run_source(source)) vga_writeln("[NovaC] Done.");
+    else vga_writeln("[NovaC] Finished with errors.");
 }
 
 static void command_apps() {
@@ -401,7 +401,7 @@ static void command_apps() {
     }
 
     vga_set_color(0x0E);
-    vga_writeln("Official TencleLang apps");
+    vga_writeln("Official NovaC apps");
     vga_set_color(0x0F);
     int count = ramfs_child_count();
     for (int i = 0; i < count; i++) {
@@ -415,7 +415,7 @@ static void command_apps() {
 
 static void command_runapp(const char* args) {
     char filename[32];
-    make_tlang_filename(filename, args, 32);
+    make_novac_filename(filename, args, 32);
     if (!has_arg(filename)) {
         vga_writeln("Usage: runapp <name>");
         return;
@@ -429,44 +429,44 @@ static void command_runapp(const char* args) {
         return;
     }
 
-    command_tlrun(filename);
+    command_ncrun(filename);
     ramfs_set_current(old_dir);
 }
 
-static void command_newtl(const char* args) {
+static void command_newnc(const char* args) {
     char filename[32];
-    make_tlang_filename(filename, args, 32);
+    make_novac_filename(filename, args, 32);
     if (!has_arg(filename)) {
-        vga_writeln("Usage: newtl <file.tlang>");
+        vga_writeln("Usage: newnc <file.nc>");
         return;
     }
 
-    const char* template_code = "var msg = \"My NovaOS TencleLang app\"\nint << func >>(msg)";
+    const char* template_code = "var msg = \"My NovaOS NovaC app\"\nint << func >>(msg)";
     if (ramfs_create_file(filename, template_code)) {
         vga_write("Created ");
         vga_writeln(filename);
-        vga_writeln("Run it with: tlrun <file.tlang>");
+        vga_writeln("Run it with: ncrun <file.nc>");
     } else {
-        vga_writeln("Cannot create TencleLang file. Check name or duplicate.");
+        vga_writeln("Cannot create NovaC file. Check name or duplicate.");
     }
 }
 
-static void command_tencle(const char* args) {
+static void command_novac(const char* args) {
     args = skip_spaces(args);
     if (!has_arg(args)) {
-        vga_writeln("TencleLang runtime is inside NovaOS.");
-        vga_writeln("Use: apps, runapp <name>, newtl <file>, tlrun <file.tlang>");
+        vga_writeln("NovaC runtime is inside NovaOS.");
+        vga_writeln("Use: apps, runapp <name>, newnc <file>, ncrun <file.nc>");
         return;
     }
     if (streq(args, "help")) {
-        tenclelang_help();
+        novac_help();
         return;
     }
     if (streq(args, "sample")) {
-        tenclelang_run_source("int << func >>(\"TencleLang sample inside NovaOS\")");
+        novac_run_source("int << func >>(\"NovaC sample inside NovaOS\")");
         return;
     }
-    vga_writeln("Unknown TencleLang command. Try: tencle help");
+    vga_writeln("Unknown NovaC command. Try: novac help");
 }
 
 static void run_command(const char* cmd) {
@@ -549,16 +549,16 @@ static void run_command(const char* cmd) {
         vga_putc((char)('0' + mouse_buttons()));
         vga_putc('\n');
         vga_writeln("Mouse is filtered to avoid random real-hardware packets.");
-    } else if (starts_with(cmd, "tlrun ")) {
-        command_tlrun(cmd + 6);
+    } else if (starts_with(cmd, "ncrun ")) {
+        command_ncrun(cmd + 6);
     } else if (streq(cmd, "apps")) {
         command_apps();
     } else if (starts_with(cmd, "runapp ")) {
         command_runapp(cmd + 7);
-    } else if (starts_with(cmd, "newtl ")) {
-        command_newtl(cmd + 6);
-    } else if (streq(cmd, "tencle") || starts_with(cmd, "tencle ")) {
-        command_tencle(cmd + 6);
+    } else if (starts_with(cmd, "newnc ")) {
+        command_newnc(cmd + 6);
+    } else if (streq(cmd, "novac") || starts_with(cmd, "novac ")) {
+        command_novac(cmd + 6);
     } else if (streq(cmd, "reboot")) {
         vga_writeln("Rebooting NovaOS...");
         system_reboot();

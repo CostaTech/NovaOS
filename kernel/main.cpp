@@ -2,7 +2,7 @@
 
 void desktop_loop();
 void ramfs_init();
-void tenclelang_init();
+void novac_init();
 
 static char active_user[32] = "guest";
 
@@ -81,7 +81,7 @@ extern "C" void kernel_main(u32 magic, u32 mbi_addr) {
     mouse_init();
     storage_init();
     ramfs_init();
-    tenclelang_init();
+    novac_init();
 
     login_screen();
     desktop_loop();

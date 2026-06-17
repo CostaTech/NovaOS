@@ -7,7 +7,7 @@
 - Use framebuffer graphics later, keep VGA text fallback stable
 - Add RAM filesystem and initrd for default apps
 - Add C++ desktop and app manager
-- Add TencleLang compiler/runtime after the kernel is stable
+- Add NovaC compiler/runtime after the kernel is stable
 
 ## Rule
 

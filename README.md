@@ -9,7 +9,7 @@ Goal: a real bootable live OS using Assembly, C and C++.
 - Assembly: boot entry and CPU setup
 - C: low-level drivers and hardware access
 - C++: desktop, apps, filesystem and higher-level systems
-- TencleLang: future app/compiler layer
+- NovaC: future app/compiler layer
 
 ## Build
 

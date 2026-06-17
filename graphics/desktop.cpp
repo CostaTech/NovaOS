@@ -2,7 +2,7 @@
 
 void shell_run();
 
-static void run_tlang_app(const char* filename);
+static void run_novac_app(const char* filename);
 
 static const char* AUTHOR = "CostaTech";
 
@@ -97,11 +97,11 @@ static void draw_calendar_panel(void) {
 static void draw_note_window(void) {
     box(36, 4, 41, 15, " Nova-Writer // Notes ", 0x1E);
     vga_write_at(38, 6, "Welcome to NOVA OS.", 0x1F);
-    vga_write_at(38, 8, "Explore files, apps and TencleLang.", 0x1F);
+    vga_write_at(38, 8, "Explore files, apps and NovaC.", 0x1F);
     vga_write_at(38, 10, "Default apps are protected.", 0x1A);
     vga_write_at(38, 12, "Today: build the storage layer.", 0x1B);
     vga_write_at(38, 15, "Open apps from the left dock.", 0x1E);
-    vga_write_at(38, 16, "TencleLang apps run inside NovaOS.", 0x1D);
+    vga_write_at(38, 16, "NovaC apps run inside NovaOS.", 0x1D);
 }
 
 static void draw_system_panel(void) {
@@ -207,7 +207,7 @@ static void about_app() {
     vga_write_at(2, 1, "NovaOS / About", 0x1E);
     box(2, 3, 74, 17, " About NovaOS ", 0x1E);
     vga_write_at(4, 5, "NovaOS", 0x1E);
-    vga_write_at(4, 7, "A new operating system built with Assembly, TencleLang, C and C++.", 0x1F);
+    vga_write_at(4, 7, "A new operating system built with Assembly, NovaC, C and C++.", 0x1F);
     vga_write_at(4, 8, "Created by CostaTech.", 0x0C);
     vga_write_at(4, 10, "Press ESC to return to desktop.", 0x1E);
 }
@@ -232,21 +232,21 @@ static void wait_escape_then_desktop() {
     }
 }
 
-static void run_tlang_app(const char* filename) {
+static void run_novac_app(const char* filename) {
     ramfs_cd("/");
     ramfs_cd("apps");
 
     const char* source = ramfs_read_file(filename);
 
     vga_clear(0x0F);
-    vga_write_at(2, 1, "NovaOS / TencleLang App", 0x0E);
+    vga_write_at(2, 1, "NovaOS / NovaC App", 0x0E);
     vga_write_at(2, 2, filename, 0x0B);
 
     if (!source) {
         vga_write_at(2, 4, "App not found.", 0x0C);
     } else {
         vga_set_color(0x0F);
-        tenclelang_run_source(source);
+        novac_run_source(source);
     }
 
     vga_write_at(2, 22, "Press ESC to return to desktop.", 0x0E);
@@ -282,7 +282,7 @@ static void open_desktop_action(char action) {
         wait_escape_then_desktop();
         desktop_redraw();
     } else if (action == 's' || action == 'S') {
-        run_tlang_app("settings.tlang");
+        run_novac_app("settings.nc");
         desktop_redraw();
     } else if (action == 'g' || action == 'G') {
         galaxy_app();
@@ -297,22 +297,22 @@ static void open_desktop_action(char action) {
         wait_escape_then_desktop();
         desktop_redraw();
     } else if (action == 'c' || action == 'C') {
-        run_tlang_app("calculator.tlang");
+        run_novac_app("calculator.nc");
         desktop_redraw();
     } else if (action == 'n' || action == 'N') {
-        run_tlang_app("notes.tlang");
+        run_novac_app("notes.nc");
         desktop_redraw();
     } else if (action == 'p' || action == 'P') {
-        run_tlang_app("paint.tlang");
+        run_novac_app("paint.nc");
         desktop_redraw();
     } else if (action == 'd' || action == 'D') {
-        run_tlang_app("documentation.tlang");
+        run_novac_app("documentation.nc");
         desktop_redraw();
     } else if (action == 'o' || action == 'O') {
-        run_tlang_app("tour.tlang");
+        run_novac_app("tour.nc");
         desktop_redraw();
     } else if (action == 'h' || action == 'H') {
-        run_tlang_app("hello.tlang");
+        run_novac_app("hello.nc");
         desktop_redraw();
     } else if (action == 'r' || action == 'R') {
         if (confirm_action(" Reboot ", "Do you want to reboot NovaOS?")) system_reboot();

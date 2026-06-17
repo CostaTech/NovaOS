@@ -57,4 +57,4 @@ python3 tools/lnp_tool.py to-png image.lnp image.png
 
 Python non controlla l'hardware. Qui serve come officina esterna: prepara immagini e file mentre sviluppiamo NovaOS su Linux/Windows.
 
-Dentro NovaOS, in futuro, sara' il codice C/C++ o TencleLang a leggere `.lnp`.
+Dentro NovaOS, in futuro, sara' il codice C/C++ o NovaC a leggere `.lnp`.

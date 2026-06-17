@@ -18,7 +18,7 @@ ISO := NovaOS.iso
 
 ASM_OBJS := $(BUILD)/entry.o $(BUILD)/interrupts_asm.o
 C_OBJS := $(BUILD)/vga.o $(BUILD)/ports.o $(BUILD)/keyboard.o $(BUILD)/mouse.o $(BUILD)/framebuffer.o $(BUILD)/storage.o
-CPP_OBJS := $(BUILD)/main.o $(BUILD)/panic.o $(BUILD)/power.o $(BUILD)/interrupts.o $(BUILD)/desktop.o $(BUILD)/shell.o $(BUILD)/ramfs.o $(BUILD)/tenclelang.o
+CPP_OBJS := $(BUILD)/main.o $(BUILD)/panic.o $(BUILD)/power.o $(BUILD)/interrupts.o $(BUILD)/desktop.o $(BUILD)/shell.o $(BUILD)/ramfs.o $(BUILD)/novac.o
 OBJS := $(ASM_OBJS) $(C_OBJS) $(CPP_OBJS)
 
 .PHONY: all iso run clean tree
@@ -49,7 +49,7 @@ $(BUILD)/%.o: shell/%.cpp | $(BUILD)
 $(BUILD)/%.o: fs/%.cpp | $(BUILD)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD)/%.o: languages/tenclelang/%.cpp | $(BUILD)
+$(BUILD)/%.o: languages/novac/%.cpp | $(BUILD)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(KERNEL): $(OBJS)
