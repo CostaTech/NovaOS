@@ -6,6 +6,10 @@
 #define PS2_STATUS 0x64
 #define PS2_COMMAND 0x64
 
+#define MOUSE_MAX_PACKETS_PER_POLL 8
+#define MOUSE_MAX_DELTA 18
+#define MOUSE_TEXT_STEP 12
+
 static int mx = 40;
 static int my = 12;
 static int mb = 0;
@@ -44,9 +48,17 @@ static u8 ps2_read_data(void) {
     return inb(PS2_DATA);
 }
 
-static void mouse_write(u8 value) {
+static void ps2_flush_output(void) {
+    for (int i = 0; i < 64; i++) {
+        if ((inb(PS2_STATUS) & 0x01) == 0) return;
+        (void)inb(PS2_DATA);
+    }
+}
+
+static int mouse_write(u8 value) {
     ps2_write_command(0xD4);
     ps2_write_data(value);
+    return ps2_read_data() == 0xFA;
 }
 
 static void clamp_position(void) {
@@ -71,6 +83,8 @@ void mouse_init(void) {
 
 #if NOVA_ENABLE_MOUSE
     packet_index = 0;
+    ps2_flush_output();
+
     ps2_write_command(0xA8);
     ps2_write_command(0x20);
     u8 config = ps2_read_data();
@@ -79,10 +93,15 @@ void mouse_init(void) {
     ps2_write_command(0x60);
     ps2_write_data(config);
 
-    mouse_write(0xF6);
-    (void)ps2_read_data();
-    mouse_write(0xF4);
-    (void)ps2_read_data();
+    if (!mouse_write(0xF6)) return; // defaults
+    if (!mouse_write(0xE6)) return; // 1:1 scaling, safer than acceleration
+    if (!mouse_write(0xE8)) return; // resolution command
+    if (!mouse_write(0x00)) return; // lowest resolution: calmer real hardware
+    if (!mouse_write(0xF3)) return; // sample rate command
+    if (!mouse_write(20)) return;   // 20 samples/sec for text-mode desktop
+    if (!mouse_write(0xF4)) return; // enable streaming
+
+    ps2_flush_output();
     mouse_ready = 1;
 #endif
 }
@@ -91,16 +110,21 @@ void mouse_poll(void) {
 #if NOVA_ENABLE_MOUSE
     if (!mouse_ready) return;
 
-    while (inb(PS2_STATUS) & 0x01) {
+    int packets_seen = 0;
+    while ((inb(PS2_STATUS) & 0x01) && packets_seen < MOUSE_MAX_PACKETS_PER_POLL) {
         u8 status = inb(PS2_STATUS);
         u8 data = inb(PS2_DATA);
 
-        if ((status & 0x20) == 0) continue;
+        if ((status & 0x20) == 0) {
+            packet_index = 0;
+            continue;
+        }
         if (packet_index == 0 && (data & 0xC8) != 0x08) continue;
         packet[packet_index++] = data;
 
         if (packet_index < 3) continue;
         packet_index = 0;
+        packets_seen++;
 
         if (packet[0] & 0x40) continue; // X overflow: ignore bad packet.
         if (packet[0] & 0x80) continue; // Y overflow: ignore bad packet.
@@ -110,15 +134,15 @@ void mouse_poll(void) {
         if (packet[0] & 0x10) dx -= 256;
         if (packet[0] & 0x20) dy -= 256;
 
-        if (abs_int(dx) > 50 || abs_int(dy) > 50) continue;
+        if (abs_int(dx) > MOUSE_MAX_DELTA || abs_int(dy) > MOUSE_MAX_DELTA) continue;
 
         accum_x += dx;
         accum_y += dy;
 
-        while (accum_x >= 2) { mx++; accum_x -= 2; }
-        while (accum_x <= -2) { mx--; accum_x += 2; }
-        while (accum_y >= 2) { my--; accum_y -= 2; }
-        while (accum_y <= -2) { my++; accum_y += 2; }
+        while (accum_x >= MOUSE_TEXT_STEP) { mx++; accum_x -= MOUSE_TEXT_STEP; }
+        while (accum_x <= -MOUSE_TEXT_STEP) { mx--; accum_x += MOUSE_TEXT_STEP; }
+        while (accum_y >= MOUSE_TEXT_STEP) { my--; accum_y -= MOUSE_TEXT_STEP; }
+        while (accum_y <= -MOUSE_TEXT_STEP) { my++; accum_y += MOUSE_TEXT_STEP; }
 
         mb = packet[0] & 0x07;
         clamp_position();
