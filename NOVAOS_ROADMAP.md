@@ -413,7 +413,6 @@ Regole:
 ## Prossimi passi consigliati
 
 1. Migliorare desktop senza complicare il kernel.
-2. Aggiungere `ls` al terminale.
 3. Creare RAM filesystem vero.
 4. Collegare Files app al RAM filesystem.
 5. Tenere mouse disattivato finche' non esiste un driver separato sicuro.

@@ -140,12 +140,11 @@ static void print_help_lang() {
     vga_set_color(0x0B);
     vga_writeln("NovaC commands");
     help_line("apps", "list official .nc apps in /apps");
-    help_line("runapp <name>", "run an app only when current folder is /apps");
+    help_line("runNC <file>", "run a .nc file in the current folder");
     help_line("newnc <file>", "create a small NovaC starter file");
     help_line("novac", "show NovaC status");
     help_line("novac help", "show NovaC syntax");
     help_line("novac sample", "run a built-in NovaC sample");
-    help_line("ncrun <file>", "run a .nc file in current folder");
     vga_writeln("Syntax: var name = \"text\"");
     vga_writeln("Syntax: var n = 2 + 3");
     vga_writeln("Syntax: input(name)");
@@ -153,7 +152,7 @@ static void print_help_lang() {
     vga_writeln("Syntax: int << func >>(name)");
     vga_writeln("Syntax: << ! >func> if n > 2 { ... }");
     vga_writeln("Syntax: <<While>>! <on> n < 5 { ... }");
-    vga_writeln("Try: cd apps  then  runapp calculator");
+    vga_writeln("Try: cd apps  then  runNC calculator.nc");
 }
 
 static void print_help_apps() {
@@ -162,9 +161,9 @@ static void print_help_apps() {
     help_line("mouse click", "open desktop icons from the dock");
     help_line("apps", "list official NovaC apps");
     help_line("cd apps", "enter the official apps folder");
-    help_line("runapp calculator", "open calculator only from /apps");
-    help_line("runapp settings", "open settings only from /apps");
-    help_line("runapp documentation", "open documentation only from /apps");
+    help_line("runNC calculator.nc", "open calculator from /apps");
+    help_line("runNC settings.nc", "open settings from /apps");
+    help_line("runNC documentation.nc", "open documentation from /apps");
     help_line("desktop", "return from Terminal to Desktop");
 }
 
@@ -371,10 +370,10 @@ static void command_lnpinfo(const char* args) {
     }
 }
 
-static void command_ncrun(const char* args) {
+static void command_run_nc(const char* args) {
     const char* name = skip_spaces(args);
     if (!has_arg(name)) {
-        vga_writeln("Usage: ncrun <file.nc>");
+        vga_writeln("Usage: runNC <file.nc>");
         return;
     }
 
@@ -407,28 +406,11 @@ static void command_apps() {
     int count = ramfs_child_count();
     for (int i = 0; i < count; i++) {
         if (!ramfs_child_is_dir(i)) {
-            vga_write("  runapp ");
+            vga_write("  runNC ");
             vga_writeln(ramfs_child_name(i));
         }
     }
     ramfs_set_current(old_dir);
-}
-
-static void command_runapp(const char* args) {
-    char filename[32];
-    make_novac_filename(filename, args, 32);
-    if (!has_arg(filename)) {
-        vga_writeln("Usage: runapp <name>");
-        return;
-    }
-
-    if (!streq(ramfs_pwd(), "/apps")) {
-        vga_writeln("runapp works only inside /apps.");
-        vga_writeln("Use: cd apps");
-        return;
-    }
-
-    command_ncrun(filename);
 }
 
 static void command_newnc(const char* args) {
@@ -443,7 +425,7 @@ static void command_newnc(const char* args) {
     if (ramfs_create_file(filename, template_code)) {
         vga_write("Created ");
         vga_writeln(filename);
-        vga_writeln("Run it with: ncrun <file.nc>");
+        vga_writeln("Run it with: runNC <file.nc>");
     } else {
         vga_writeln("Cannot create NovaC file. Check name or duplicate.");
     }
@@ -453,7 +435,7 @@ static void command_novac(const char* args) {
     args = skip_spaces(args);
     if (!has_arg(args)) {
         vga_writeln("NovaC runtime is inside NovaOS.");
-        vga_writeln("Use: apps, runapp <name>, newnc <file>, ncrun <file.nc>");
+        vga_writeln("Use: apps, runNC <file.nc>, newnc <file>, novac help");
         return;
     }
     if (streq(args, "help")) {
@@ -547,12 +529,12 @@ static void run_command(const char* cmd) {
         vga_putc((char)('0' + mouse_buttons()));
         vga_putc('\n');
         vga_writeln("Mouse is filtered to avoid random real-hardware packets.");
-    } else if (starts_with(cmd, "ncrun ")) {
-        command_ncrun(cmd + 6);
+    } else if (starts_with(cmd, "runNC ")) {
+        command_run_nc(cmd + 6);
+    } else if (starts_with(cmd, "runnc ")) {
+        command_run_nc(cmd + 6);
     } else if (streq(cmd, "apps")) {
         command_apps();
-    } else if (starts_with(cmd, "runapp ")) {
-        command_runapp(cmd + 7);
     } else if (starts_with(cmd, "newnc ")) {
         command_newnc(cmd + 6);
     } else if (streq(cmd, "novac") || starts_with(cmd, "novac ")) {
