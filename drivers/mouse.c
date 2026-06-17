@@ -113,12 +113,13 @@ void mouse_poll(void) {
     int packets_seen = 0;
     while ((inb(PS2_STATUS) & 0x01) && packets_seen < MOUSE_MAX_PACKETS_PER_POLL) {
         u8 status = inb(PS2_STATUS);
-        u8 data = inb(PS2_DATA);
 
         if ((status & 0x20) == 0) {
             packet_index = 0;
-            continue;
+            break;
         }
+
+        u8 data = inb(PS2_DATA);
         if (packet_index == 0 && (data & 0xC8) != 0x08) continue;
         packet[packet_index++] = data;
 

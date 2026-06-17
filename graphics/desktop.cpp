@@ -377,7 +377,11 @@ void desktop_loop() {
             desktop_redraw();
         }
 
-        char key = keyboard_try_read_char();
+        char key = 0;
+        for (int key_reads = 0; key_reads < 8 && !key; key_reads++) {
+            key = keyboard_try_read_char();
+        }
+
         if (key == NOVA_KEY_UP || key == 'w' || key == 'W') {
             selected_app--;
             if (selected_app < 0) selected_app = 9;
