@@ -140,7 +140,7 @@ static void print_help_lang() {
     vga_set_color(0x0B);
     vga_writeln("NovaC commands");
     help_line("apps", "list official .nc apps in /apps");
-    help_line("runapp <name>", "run an app from /apps, .nc optional");
+    help_line("runapp <name>", "run an app only when current folder is /apps");
     help_line("newnc <file>", "create a small NovaC starter file");
     help_line("novac", "show NovaC status");
     help_line("novac help", "show NovaC syntax");
@@ -153,7 +153,7 @@ static void print_help_lang() {
     vga_writeln("Syntax: int << func >>(name)");
     vga_writeln("Syntax: << ! >func> if n > 2 { ... }");
     vga_writeln("Syntax: <<While>>! <on> n < 5 { ... }");
-    vga_writeln("Try: apps  then  runapp calculator");
+    vga_writeln("Try: cd apps  then  runapp calculator");
 }
 
 static void print_help_apps() {
@@ -161,9 +161,10 @@ static void print_help_apps() {
     vga_writeln("Desktop apps");
     help_line("mouse click", "open desktop icons from the dock");
     help_line("apps", "list official NovaC apps");
-    help_line("runapp calculator", "open the calculator from Terminal");
-    help_line("runapp settings", "open the settings app from Terminal");
-    help_line("runapp documentation", "open the NovaC documentation app");
+    help_line("cd apps", "enter the official apps folder");
+    help_line("runapp calculator", "open calculator only from /apps");
+    help_line("runapp settings", "open settings only from /apps");
+    help_line("runapp documentation", "open documentation only from /apps");
     help_line("desktop", "return from Terminal to Desktop");
 }
 
@@ -421,16 +422,13 @@ static void command_runapp(const char* args) {
         return;
     }
 
-    int old_dir = ramfs_current_id();
-    ramfs_cd("/");
-    if (!ramfs_cd("apps")) {
-        ramfs_set_current(old_dir);
-        vga_writeln("/apps folder not found.");
+    if (!streq(ramfs_pwd(), "/apps")) {
+        vga_writeln("runapp works only inside /apps.");
+        vga_writeln("Use: cd apps");
         return;
     }
 
     command_ncrun(filename);
-    ramfs_set_current(old_dir);
 }
 
 static void command_newnc(const char* args) {
