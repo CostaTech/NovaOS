@@ -38,7 +38,7 @@ static void box(int x, int y, int w, int h, const char* title, u8 color) {
 
 static void draw_footer(const char* text) {
     vga_write_at(0, 23, "================================================================================", 0x30);
-    vga_write_at(0, 24, "Use UP/DOWN + ENTER to open apps. Mouse click is optional.", 0x3E);
+    vga_write_at(0, 24, "Use UP/DOWN or W/S + ENTER to open apps. Mouse is optional.", 0x3E);
     if (text) vga_write_at(66, 24, text, 0x3B);
 }
 
@@ -378,7 +378,7 @@ void desktop_loop() {
         }
 
         char key = keyboard_try_read_char();
-        if (key == NOVA_KEY_UP) {
+        if (key == NOVA_KEY_UP || key == 'w' || key == 'W') {
             selected_app--;
             if (selected_app < 0) selected_app = 9;
             desktop_redraw();
@@ -386,7 +386,7 @@ void desktop_loop() {
             last_y = mouse_y();
             last_buttons = mouse_buttons();
             idle_ticks = 0;
-        } else if (key == NOVA_KEY_DOWN) {
+        } else if (key == NOVA_KEY_DOWN || key == 's' || key == 'S') {
             selected_app++;
             if (selected_app > 9) selected_app = 0;
             desktop_redraw();

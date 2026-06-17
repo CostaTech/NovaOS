@@ -55,6 +55,7 @@ char keyboard_try_read_char(void) {
     if (extended_key) {
         extended_key = 0;
         if (sc & 0x80) return 0;
+        if (sc == 0x1C) return '\n';
         if (sc == 0x48) return NOVA_KEY_UP;
         if (sc == 0x50) return NOVA_KEY_DOWN;
         if (sc == 0x4B) return NOVA_KEY_LEFT;
@@ -80,6 +81,12 @@ char keyboard_try_read_char(void) {
         caps_lock = !caps_lock;
         return 0;
     }
+
+    // Some BIOS/QEMU setups send arrow keys without the 0xE0 prefix.
+    if (sc == 0x48) return NOVA_KEY_UP;
+    if (sc == 0x50) return NOVA_KEY_DOWN;
+    if (sc == 0x4B) return NOVA_KEY_LEFT;
+    if (sc == 0x4D) return NOVA_KEY_RIGHT;
 
     if (sc < 128) {
         char c = shift_down ? keymap_shift[sc] : keymap[sc];
