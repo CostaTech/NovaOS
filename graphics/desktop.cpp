@@ -5,6 +5,8 @@ void shell_run();
 static void run_novac_app(const char* filename);
 
 static const char* AUTHOR = "CostaTech";
+static int selected_app = 0;
+static const char dock_actions[10] = {'f', 't', 's', 'c', 'n', 'p', 'd', 'o', 'h', 'm'};
 
 static int text_len(const char* text) {
     int n = 0;
@@ -36,7 +38,7 @@ static void box(int x, int y, int w, int h, const char* title, u8 color) {
 
 static void draw_footer(const char* text) {
     vga_write_at(0, 23, "================================================================================", 0x30);
-    vga_write_at(0, 24, "Click an app in the dock. Keyboard shortcuts are disabled on desktop.", 0x3E);
+    vga_write_at(0, 24, "Use UP/DOWN + ENTER to open apps. Mouse click is optional.", 0x3E);
     if (text) vga_write_at(66, 24, text, 0x3B);
 }
 
@@ -56,10 +58,13 @@ static void draw_satellite_logo(int x, int y) {
     vga_write_at(x + 1, y + 3, "NOVA LINK", 0x1A);
 }
 
-static void draw_dock_icon(int x, int y, const char* icon, const char* label, u8 color) {
-    vga_write_at(x, y, "[  ]", color);
-    vga_write_at(x + 1, y, icon, 0x1E);
-    vga_write_at(x + 4, y, label, 0x1F);
+static void draw_dock_icon(int x, int y, int selected, const char* icon, const char* label, u8 color) {
+    u8 frame = selected ? 0x4E : color;
+    u8 text = selected ? 0x4F : 0x1F;
+    vga_write_at(x - 1, y, selected ? ">" : " ", selected ? 0x4E : 0x10);
+    vga_write_at(x, y, "[  ]", frame);
+    vga_write_at(x + 1, y, icon, selected ? 0x4F : 0x1E);
+    vga_write_at(x + 4, y, label, text);
 }
 
 static void draw_stars(void) {
@@ -121,16 +126,16 @@ void desktop_draw() {
     draw_satellite_logo(68, 3);
 
     box(1, 3, 18, 12, " Apps ", 0x1A);
-    draw_dock_icon(3, 4, "/", "Files", 0x1B);
-    draw_dock_icon(3, 5, ">", "Terminal", 0x1A);
-    draw_dock_icon(3, 6, "#", "Settings", 0x1D);
-    draw_dock_icon(3, 7, "+", "Calc", 0x1E);
-    draw_dock_icon(3, 8, "=", "Notes", 0x1B);
-    draw_dock_icon(3, 9, "*", "Paint", 0x1D);
-    draw_dock_icon(3, 10, "?", "Docs", 0x1E);
-    draw_dock_icon(3, 11, "@", "Tour", 0x1A);
-    draw_dock_icon(3, 12, "!", "Hello", 0x1F);
-    draw_dock_icon(3, 13, "^", "Games", 0x1D);
+    draw_dock_icon(3, 4, selected_app == 0, "/", "Files", 0x1B);
+    draw_dock_icon(3, 5, selected_app == 1, ">", "Terminal", 0x1A);
+    draw_dock_icon(3, 6, selected_app == 2, "#", "Settings", 0x1D);
+    draw_dock_icon(3, 7, selected_app == 3, "+", "Calc", 0x1E);
+    draw_dock_icon(3, 8, selected_app == 4, "=", "Notes", 0x1B);
+    draw_dock_icon(3, 9, selected_app == 5, "*", "Paint", 0x1D);
+    draw_dock_icon(3, 10, selected_app == 6, "?", "Docs", 0x1E);
+    draw_dock_icon(3, 11, selected_app == 7, "@", "Tour", 0x1A);
+    draw_dock_icon(3, 12, selected_app == 8, "!", "Hello", 0x1F);
+    draw_dock_icon(3, 13, selected_app == 9, "^", "Games", 0x1D);
 
     draw_calendar_panel();
     draw_note_window();
@@ -372,6 +377,30 @@ void desktop_loop() {
             desktop_redraw();
         }
 
-        (void)keyboard_try_read_char();
+        char key = keyboard_try_read_char();
+        if (key == NOVA_KEY_UP) {
+            selected_app--;
+            if (selected_app < 0) selected_app = 9;
+            desktop_redraw();
+            last_x = mouse_x();
+            last_y = mouse_y();
+            last_buttons = mouse_buttons();
+            idle_ticks = 0;
+        } else if (key == NOVA_KEY_DOWN) {
+            selected_app++;
+            if (selected_app > 9) selected_app = 0;
+            desktop_redraw();
+            last_x = mouse_x();
+            last_y = mouse_y();
+            last_buttons = mouse_buttons();
+            idle_ticks = 0;
+        } else if (key == '\n') {
+            open_desktop_action(dock_actions[selected_app]);
+            desktop_redraw();
+            last_x = mouse_x();
+            last_y = mouse_y();
+            last_buttons = mouse_buttons();
+            idle_ticks = 0;
+        }
     }
 }

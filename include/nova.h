@@ -10,6 +10,11 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 typedef int i32;
 
+#define NOVA_KEY_UP 1
+#define NOVA_KEY_DOWN 2
+#define NOVA_KEY_LEFT 3
+#define NOVA_KEY_RIGHT 4
+
 void outb(u16 port, u8 value);
 void outw(u16 port, u16 value);
 u8 inb(u16 port);

@@ -5,6 +5,7 @@
 
 static int shift_down = 0;
 static int caps_lock = 0;
+static int extended_key = 0;
 
 static const char keymap[128] = {
     0, 27, '1','2','3','4','5','6','7','8','9','0','-','=', '\b',
@@ -34,6 +35,7 @@ static char to_upper(char c) {
 void keyboard_init(void) {
     shift_down = 0;
     caps_lock = 0;
+    extended_key = 0;
     while (inb(KBD_STATUS) & 1) (void)inb(KBD_DATA);
 }
 
@@ -44,6 +46,21 @@ char keyboard_try_read_char(void) {
     u8 sc = inb(KBD_DATA);
 
     if (status & 0x20) return 0;       // AUX/mouse byte: ignore, keyboard only.
+
+    if (sc == 0xE0) {
+        extended_key = 1;
+        return 0;
+    }
+
+    if (extended_key) {
+        extended_key = 0;
+        if (sc & 0x80) return 0;
+        if (sc == 0x48) return NOVA_KEY_UP;
+        if (sc == 0x50) return NOVA_KEY_DOWN;
+        if (sc == 0x4B) return NOVA_KEY_LEFT;
+        if (sc == 0x4D) return NOVA_KEY_RIGHT;
+        return 0;
+    }
 
     // Key release.
     if (sc & 0x80) {
