@@ -109,7 +109,7 @@ void ramfs_init(void) {
 
     make_system_entry(0, "system", 1, "");
     make_system_entry(0, "apps", 1, "");
-    make_entry(0, "home", 1, "");
+    make_system_entry(0, "home", 1, "");
     make_system_entry(0, "docs", 1, "");
     make_system_entry(0, "games", 1, "");
     make_system_entry(0, "images", 1, "");
@@ -127,9 +127,9 @@ void ramfs_init(void) {
         make_system_entry(docs, "games.txt", 0, "Games will be launched from /games and written in NovaC.");
         make_system_entry(docs, "tour.txt", 0, "NovaOS Tour: open Files, Terminal, Settings, Calculator, Galaxy and Games from the desktop.");
     }
-    if (home >= 0) make_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
+    if (home >= 0) make_system_entry(home, "notes.txt", 0, "Write your first NovaOS files here.");
     if (apps >= 0) {
-        make_system_entry(apps, "settings.nc", 0, "var title = \"NovaOS Settings\"\nint << func >>(title)\nvar mouse = \"Mouse: PS/2 polling driver\"\nint << func >>(mouse)\nvar files = \"Default apps are protected\"\nint << func >>(files)\nvar lang = \"NovaC is the official app language\"\nint << func >>(lang)");
+        make_system_entry(apps, "settings.nc", 0, "int << func >>(\"NovaOS Settings\")\nint << func >>(\"Desktop theme\")\nint << func >>(\"0 Blue Galaxy\")\nint << func >>(\"1 Nebula Green\")\nint << func >>(\"2 Violet Orbit\")\nint << func >>(\"3 Deep Space\")\nint << func >>(\"Choose theme number:\")\ninput(choice)\ntheme(choice)\nint << func >>(\"Return to desktop to see it.\")");
         make_system_entry(apps, "tour.nc", 0, "int << func >>(\"Welcome to NovaOS\")\nint << func >>(\"1 Files: explore NovaFS\")\nint << func >>(\"2 Terminal: run commands\")\nint << func >>(\"3 NovaC: build OS apps\")\nint << func >>(\"4 Games and graphics will grow here\")\nint << func >>(\"5 Use apps and runNC to launch programs\")");
         make_system_entry(apps, "documentation.nc", 0, "int << func >>(\"NovaOS Documentation\")\nint << func >>(\"help core, help fs, help lang, help apps\")\nint << func >>(\"Official NovaC syntax is special\")\nint << func >>(\"Use cd apps, runNC name.nc, newnc file.nc\")\nint << func >>(\"Default files are protected\")");
         make_system_entry(apps, "paint.nc", 0, "int << func >>(\"NovaPaint\")\nint << func >>(\"+----------------+\")\nint << func >>(\"|  *   *   *     |\")\nint << func >>(\"|    NOVA ART    |\")\nint << func >>(\"|     *   *      |\")\nint << func >>(\"+----------------+\")");
@@ -142,10 +142,12 @@ void ramfs_init(void) {
         make_system_entry(apps, "storageinfo.nc", 0, "int << func >>(\"Storage Info\")\nint << func >>(\"NovaFS is RAM based for now.\")\nint << func >>(\"Official apps are protected and restored at boot.\")");
         make_system_entry(apps, "theme.nc", 0, "int << func >>(\"Nova Theme\")\nint << func >>(\"Blue space shell, yellow highlights, cyan links.\")\nint << func >>(\"Next step: real theme settings.\")");
         make_system_entry(apps, "clock.nc", 0, "int << func >>(\"Nova Clock\")\nint << func >>(\"RTC driver will arrive later.\")\nint << func >>(\"For now this is a NovaC placeholder app.\")");
-        make_system_entry(apps, "calculator.nc", 0, "int << func >>(\"NovaCalc\")\nint << func >>(\"First number:\")\ninput(a)\nint << func >>(\"Operator + - * /:\")\ninput(op)\nint << func >>(\"Second number:\")\ninput(b)\n<< ! >func> if op == \"+\" {\nvar result = a + b\nint << func >>(result)\n}\n>> func << else {\n<< ! >func> if op == \"-\" {\nvar result = a - b\nint << func >>(result)\n}\n>> func << else {\n<< ! >func> if op == \"*\" {\nvar result = a * b\nint << func >>(result)\n}\n>> func << else {\n<< ! >func> if op == \"/\" {\nvar result = a / b\nint << func >>(result)\n}\n>> func << else {\nint << func >>(\"Unknown operator\")\n}\n}\n}\n}");
+        make_system_entry(apps, "syntax_test.nc", 0, "int << func >>(\"NovaC Syntax Test\")\nvar x = 0\nx = x + 1\nint << func >>(x)\n<< ! >func> if x >= 2 {\nint << func >>(\"if branch\")\n} elif x != 0 and not x == 3 {\nint << func >>(\"elif branch\")\n} >> func << else {\nint << func >>(\"else branch\")\n}\n<<While>>! <on> x < 3 {\nint << func >>(x)\nx = x + 1\n}\nint < for > i in 3 {\nint << func >>(i)\n}");
+        make_system_entry(apps, "calculator.nc", 0, "int << func >>(\"NovaCalc\")\nint << func >>(\"First number:\")\ninput(a)\nint << func >>(\"Operator + - * /:\")\ninput(op)\nint << func >>(\"Second number:\")\ninput(b)\n<< ! >func> if op == \"+\" {\nvar result = a + b\nint << func >>(result)\n} elif op == \"-\" {\nvar result = a - b\nint << func >>(result)\n} elif op == \"*\" {\nvar result = a * b\nint << func >>(result)\n} elif op == \"/\" {\nvar result = a / b\nint << func >>(result)\n} >> func << else {\nint << func >>(\"Unknown operator\")\n}");
     }
     if (games >= 0) {
         make_system_entry(games, "hello_game.nc", 0, "var title = \"Nova Games will run NovaC apps\"\nint << func >>(title)");
+        make_system_entry(games, "nova_quest.nc", 0, "int << func >>(\"Nova Quest\")\nvar score = 0\nint << func >>(\"Dark satellite\")\nint << func >>(\"1 dock 2 scan\")\ninput(c)\n<< ! >func> if c == \"1\" {\nscore = score + 2\nint << func >>(\"Docked\")\n} elif c == \"2\" {\nscore = score + 1\nint << func >>(\"Signal\")\n} >> func << else {\nscore = score - 1\nint << func >>(\"Lost\")\n}\nint << func >>(\"Door 1 key 2 force\")\ninput(c)\n<< ! >func> if c == \"1\" and score >= 1 {\nscore = score + 4\nint << func >>(\"Opened\")\n} elif c == \"2\" {\nscore = score + 1\nint << func >>(\"Alarm\")\n} >> func << else {\nscore = score - 2\nint << func >>(\"Locked\")\n}\nint << func >>(\"Escape 1 launch 2 repair\")\ninput(c)\n<< ! >func> if c == \"2\" {\nscore = score + 3\nint << func >>(\"Stable\")\n} elif c == \"1\" {\nscore = score + 1\nint << func >>(\"Risky\")\n} >> func << else {\nscore = score - 1\nint << func >>(\"No action\")\n}\n<< ! >func> if score >= 6 {\nint << func >>(\"MISSION COMPLETE\")\n} elif score >= 2 {\nint << func >>(\"ESCAPED\")\n} >> func << else {\nint << func >>(\"MISSION FAILED\")\n}\nint << func >>(score)");
         make_system_entry(games, "README.txt", 0, "Put future NovaC games here.");
     }
     if (images >= 0) {
@@ -235,6 +237,7 @@ const char* ramfs_read_file(const char* name) {
 int ramfs_write_file(const char* name, const char* content) {
     int id = find_child(cwd, name);
     if (id < 0 || entries[id].is_dir) return 0;
+    if (entries[id].protected_entry) return 0;
     str_copy(entries[id].content, content ? content : "", 1024);
     return 1;
 }
@@ -299,3 +302,112 @@ int ramfs_entry_is_dir(int id) {
     if (id < 0 || id >= 64 || !entries[id].used) return 0;
     return entries[id].is_dir;
 }
+
+
+#define RAMFS_IMAGE_BYTES (144 * 512)
+#define RAMFS_ENTRY_BYTES 1064
+
+static u8 ramfs_image[RAMFS_IMAGE_BYTES];
+
+static void image_clear(void) {
+    for (int i = 0; i < RAMFS_IMAGE_BYTES; i++) ramfs_image[i] = 0;
+}
+
+static void image_put32(int pos, int value) {
+    ramfs_image[pos] = (u8)(value & 0xFF);
+    ramfs_image[pos + 1] = (u8)((value >> 8) & 0xFF);
+    ramfs_image[pos + 2] = (u8)((value >> 16) & 0xFF);
+    ramfs_image[pos + 3] = (u8)((value >> 24) & 0xFF);
+}
+
+static int image_get32(int pos) {
+    return (int)ramfs_image[pos] |
+           ((int)ramfs_image[pos + 1] << 8) |
+           ((int)ramfs_image[pos + 2] << 16) |
+           ((int)ramfs_image[pos + 3] << 24);
+}
+
+static int image_has_magic(void) {
+    return ramfs_image[0] == 'N' && ramfs_image[1] == 'O' && ramfs_image[2] == 'V' &&
+           ramfs_image[3] == 'A' && ramfs_image[4] == 'F' && ramfs_image[5] == 'S' &&
+           ramfs_image[6] == '1';
+}
+
+int ramfs_save_to_storage(void) {
+    image_clear();
+    ramfs_image[0] = 'N';
+    ramfs_image[1] = 'O';
+    ramfs_image[2] = 'V';
+    ramfs_image[3] = 'A';
+    ramfs_image[4] = 'F';
+    ramfs_image[5] = 'S';
+    ramfs_image[6] = '1';
+    image_put32(8, 64);
+    image_put32(12, cwd);
+
+    int base = 512;
+    for (int id = 0; id < 64; id++) {
+        int pos = base + id * RAMFS_ENTRY_BYTES;
+        // Protected files are part of the kernel image, not user storage.
+        if (!entries[id].used || entries[id].protected_entry) {
+            image_put32(pos, 0);
+            continue;
+        }
+        image_put32(pos, entries[id].used);
+        image_put32(pos + 4, entries[id].is_dir);
+        image_put32(pos + 8, 0);
+        image_put32(pos + 12, entries[id].parent);
+        for (int i = 0; i < 24; i++) ramfs_image[pos + 16 + i] = (u8)entries[id].name[i];
+        for (int i = 0; i < 1024; i++) ramfs_image[pos + 40 + i] = (u8)entries[id].content[i];
+    }
+
+    return storage_write_novafs(ramfs_image, RAMFS_IMAGE_BYTES);
+}
+
+int ramfs_load_from_storage(void) {
+    image_clear();
+    if (!storage_read_novafs(ramfs_image, RAMFS_IMAGE_BYTES)) return 0;
+    if (!image_has_magic()) return 0;
+    if (image_get32(8) != 64) return 0;
+
+    // Delete only user-created entries. Official protected files stay alive.
+    for (int id = 1; id < 64; id++) {
+        if (entries[id].used && !entries[id].protected_entry) {
+            entries[id].used = 0;
+            entries[id].is_dir = 0;
+            entries[id].parent = 0;
+            entries[id].name[0] = 0;
+            entries[id].content[0] = 0;
+        }
+    }
+
+    int base = 512;
+    for (int id = 1; id < 64; id++) {
+        int pos = base + id * RAMFS_ENTRY_BYTES;
+        int used = image_get32(pos);
+        if (!used) continue;
+
+        int parent = image_get32(pos + 12);
+        if (parent < 0 || parent >= 64 || !entries[parent].used || !entries[parent].is_dir) continue;
+        if (entries[id].used && entries[id].protected_entry) continue;
+
+        entries[id].used = 1;
+        entries[id].is_dir = image_get32(pos + 4);
+        entries[id].protected_entry = 0;
+        entries[id].parent = parent;
+        for (int i = 0; i < 24; i++) entries[id].name[i] = (char)ramfs_image[pos + 16 + i];
+        entries[id].name[23] = 0;
+        if (!valid_name(entries[id].name)) {
+            entries[id].used = 0;
+            continue;
+        }
+        for (int i = 0; i < 1024; i++) entries[id].content[i] = (char)ramfs_image[pos + 40 + i];
+        entries[id].content[1023] = 0;
+    }
+
+    int loaded_cwd = image_get32(12);
+    if (loaded_cwd < 0 || loaded_cwd >= 64 || !entries[loaded_cwd].used || !entries[loaded_cwd].is_dir) loaded_cwd = 0;
+    cwd = loaded_cwd;
+    return entries[0].used && entries[0].is_dir;
+}
+

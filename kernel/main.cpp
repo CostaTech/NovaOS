@@ -6,38 +6,50 @@ void novac_init();
 
 static char active_user[32] = "guest";
 
-void session_set_username(const char* name) {
+void session_set_username(const char *name)
+{
     int i = 0;
-    if (!name || !name[0]) name = "guest";
-    while (name[i] && i < 31) {
+    if (!name || !name[0])
+        name = "guest";
+    while (name[i] && i < 31)
+    {
         active_user[i] = name[i];
         i++;
     }
     active_user[i] = 0;
 }
 
-const char* session_username(void) {
+const char *session_username(void)
+{
     return active_user;
 }
 
-static void login_screen() {
+static void login_screen()
+{
     char username[32];
     int len = 0;
     username[0] = 0;
 
     vga_clear(0x10);
-    vga_write_at(24, 5, "+------------------------------+", 0x1E);
-    vga_write_at(24, 6, "|          NovaOS Login        |", 0x1E);
-    vga_write_at(24, 7, "+------------------------------+", 0x1E);
-    vga_write_at(26, 10, "Username:", 0x1B);
-    vga_write_at(26, 13, "ENTER starts NovaOS", 0x1A);
-    vga_write_at(26, 14, "Password support comes with storage.", 0x18);
-    vga_write_at(36, 10, "_______________________________", 0x18);
+    vga_write_at(0, 0, "================================================================================", 0x30);
+    vga_write_at(2, 1, "NOVA OS // LOGIN STATION", 0x3E);
+    vga_write_at(57, 1, "Boot: LIVE", 0x3B);
 
-    for (;;) {
+    vga_write_at(18, 4, "+--------------------------------------------+", 0x1B);
+    vga_write_at(18, 5, "|              NovaOS Account               |", 0x1E);
+    vga_write_at(18, 6, "+--------------------------------------------+", 0x1B);
+    vga_write_at(20, 8, "User name", 0x1A);
+    vga_write_at(20, 9, "----------------------------------------", 0x18);
+    vga_write_at(20, 11, "Press ENTER to start. Empty name = guest.", 0x1E);
+    vga_write_at(20, 9, "> ", 0x1F);
+
+    for (;;)
+    {
         char c = keyboard_read_char();
-        if (c == '\n') {
-            if (len == 0) {
+        if (c == '\n')
+        {
+            if (len == 0)
+            {
                 username[0] = 'g';
                 username[1] = 'u';
                 username[2] = 'e';
@@ -47,31 +59,39 @@ static void login_screen() {
             }
             break;
         }
-        if (c == '\b') {
-            if (len > 0) {
+        if (c == '\b')
+        {
+            if (len > 0)
+            {
                 len--;
                 username[len] = 0;
-                vga_write_at(36, 10, "_______________________________", 0x18);
-                vga_write_at(36, 10, username, 0x1F);
+                vga_write_at(22, 9, "_______________________________", 0x18);
+                vga_write_at(22, 9, username, 0x1F);
             }
-        } else if (c >= 32 && c <= 126 && len < 31) {
+        }
+        else if (c >= 32 && c <= 126 && len < 31)
+        {
             username[len++] = c;
             username[len] = 0;
-            vga_write_at(36, 10, "_______________________________", 0x18);
-            vga_write_at(36, 10, username, 0x1F);
+            vga_write_at(22, 9, "_______________________________", 0x18);
+            vga_write_at(22, 9, username, 0x1F);
         }
     }
 
     session_set_username(username);
 
     vga_clear(0x10);
-    vga_write_at(26, 10, "Welcome to NovaOS,", 0x1E);
-    vga_write_at(45, 10, username, 0x1B);
-    for (int i = 0; i < 8000000; i++) __asm__ volatile ("nop");
+    vga_write_at(22, 10, "Welcome to NovaOS,", 0x1E);
+    vga_write_at(41, 10, username, 0x1B);
+    vga_write_at(22, 12, "Loading galactic desktop...", 0x1A);
+    for (int i = 0; i < 8000000; i++)
+        __asm__ volatile("nop");
 }
 
-extern "C" void kernel_main(u32 magic, u32 mbi_addr) {
-    if (magic != 0x2BADB002) {
+extern "C" void kernel_main(u32 magic, u32 mbi_addr)
+{
+    if (magic != 0x2BADB002)
+    {
         NOVA_PANIC("Invalid Multiboot magic. Bootloader did not load NovaOS correctly.");
     }
 
@@ -86,5 +106,6 @@ extern "C" void kernel_main(u32 magic, u32 mbi_addr) {
     login_screen();
     desktop_loop();
 
-    for (;;) __asm__ volatile ("hlt");
+    for (;;)
+        __asm__ volatile("hlt");
 }

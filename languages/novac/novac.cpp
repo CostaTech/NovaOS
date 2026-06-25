@@ -1,5 +1,8 @@
 #include "nova.h"
 
+#define NOVAC_MAX_LINES 96
+#define NOVAC_LINE_LEN 128
+
 struct NovaCValue {
     int is_string;
     int number;
@@ -13,6 +16,8 @@ struct NovaCVar {
 
 static NovaCVar vars[16];
 static int var_count = 0;
+static int novac_error_reported = 0;
+static void print_number(int n);
 
 static int starts_with(const char* text, const char* prefix) {
     while (*prefix) {
@@ -57,6 +62,27 @@ static int copy_name(char* dst, const char* src, int max) {
     }
     dst[i] = 0;
     return i;
+}
+
+
+static void print_small_number(int n) {
+    print_number(n);
+}
+
+static void novac_report_error(int line_no, const char* message, const char* line) {
+    if (novac_error_reported) return;
+    novac_error_reported = 1;
+    vga_set_color(0x0C);
+    vga_write("[NovaC] Error at line ");
+    print_small_number(line_no);
+    vga_write(": ");
+    vga_writeln(message);
+    if (line && line[0]) {
+        vga_set_color(0x08);
+        vga_write("  > ");
+        vga_writeln(line);
+    }
+    vga_set_color(0x0F);
 }
 
 static void clear_vars() {
@@ -194,12 +220,27 @@ static int eval_number(const char* expr, int* ok) {
     if (op == '-') return left - right;
     if (op == '*') return left * right;
     if (op == '/') return right == 0 ? 0 : left / right;
+    if (op == '%') return right == 0 ? 0 : left % right;
     *ok = 0;
     return 0;
 }
 
 static NovaCValue eval_value(const char* expr, int* ok) {
     expr = skip_spaces(expr);
+    if (starts_with(expr, "on")) {
+        const char* after = skip_spaces(expr + 2);
+        if (*after == 0 || *after == ')' || *after == '}' || *after == '{') {
+            *ok = 1;
+            return make_number(1);
+        }
+    }
+    if (starts_with(expr, "off")) {
+        const char* after = skip_spaces(expr + 3);
+        if (*after == 0 || *after == ')' || *after == '}' || *after == '{') {
+            *ok = 1;
+            return make_number(0);
+        }
+    }
     if (*expr == '"') {
         char tmp[48];
         int i = 0;
@@ -241,33 +282,78 @@ static int set_var(const char* name, NovaCValue value) {
     return 1;
 }
 
-static int eval_condition(const char* cond) {
-    char left_expr[32];
-    char right_expr[32];
-    int i = 0;
-    cond = skip_spaces(cond);
-    while (cond[i] && cond[i] != '>' && cond[i] != '<' && cond[i] != '=' && i < 31) {
-        left_expr[i] = cond[i];
-        i++;
+static void copy_range_trim(char* dst, const char* src, int start, int end, int max) {
+    while (start < end && (src[start] == ' ' || src[start] == '\t')) start++;
+    while (end > start && (src[end - 1] == ' ' || src[end - 1] == '\t' || src[end - 1] == '{')) end--;
+    int out = 0;
+    for (int i = start; i < end && out < max - 1; i++) dst[out++] = src[i];
+    dst[out] = 0;
+}
+
+static int find_logic_op(const char* cond, const char* op) {
+    int op_len = text_len(op);
+    int in_string = 0;
+    for (int i = 0; cond[i]; i++) {
+        if (cond[i] == '"') in_string = !in_string;
+        if (in_string) continue;
+        int ok = 1;
+        for (int j = 0; j < op_len; j++) {
+            if (cond[i + j] != op[j]) {
+                ok = 0;
+                break;
+            }
+        }
+        if (ok) return i;
     }
-    left_expr[i] = 0;
+    return -1;
+}
 
-    char op = cond[i];
-    if (!op) return 0;
-    int double_eq = op == '=' && cond[i + 1] == '=';
-    i += double_eq ? 2 : 1;
+static int eval_condition(const char* cond);
 
-    int j = 0;
-    while (cond[i] && cond[i] != '{' && j < 31) right_expr[j++] = cond[i++];
-    right_expr[j] = 0;
+static int eval_simple_condition(const char* cond) {
+    char left_expr[48];
+    char right_expr[48];
+    int op_pos = -1;
+    int op_len = 0;
+    char op1 = 0;
+    char op2 = 0;
+
+    cond = skip_spaces(cond);
+    for (int i = 0; cond[i] && cond[i] != '{'; i++) {
+        if (cond[i] == '>' || cond[i] == '<' || cond[i] == '=' || cond[i] == '!') {
+            op_pos = i;
+            op1 = cond[i];
+            if (cond[i + 1] == '=') {
+                op2 = '=';
+                op_len = 2;
+            } else {
+                op_len = 1;
+            }
+            break;
+        }
+    }
+
+    if (op_pos < 0) {
+        int ok = 0;
+        NovaCValue value = eval_value(cond, &ok);
+        if (!ok) return 0;
+        if (value.is_string) return value.text[0] != 0;
+        return value.number != 0;
+    }
+
+    int cond_len = text_len(cond);
+    copy_range_trim(left_expr, cond, 0, op_pos, 48);
+    copy_range_trim(right_expr, cond, op_pos + op_len, cond_len, 48);
 
     int value_left_ok = 0;
     int value_right_ok = 0;
     NovaCValue left_value = eval_value(left_expr, &value_left_ok);
     NovaCValue right_value = eval_value(right_expr, &value_right_ok);
 
-    if (double_eq && value_left_ok && value_right_ok && left_value.is_string && right_value.is_string) {
-        return str_eq(left_value.text, right_value.text);
+    if (value_left_ok && value_right_ok && left_value.is_string && right_value.is_string) {
+        if (op1 == '=' && op2 == '=') return str_eq(left_value.text, right_value.text);
+        if (op1 == '!' && op2 == '=') return !str_eq(left_value.text, right_value.text);
+        return 0;
     }
 
     int ok_left = 0;
@@ -276,33 +362,67 @@ static int eval_condition(const char* cond) {
     int right = eval_number(right_expr, &ok_right);
     if (!ok_left || !ok_right) return 0;
 
-    if (op == '>') return left > right;
-    if (op == '<') return left < right;
-    if (op == '=' && double_eq) return left == right;
+    if (op1 == '>' && op2 == '=') return left >= right;
+    if (op1 == '<' && op2 == '=') return left <= right;
+    if (op1 == '!' && op2 == '=') return left != right;
+    if (op1 == '=' && op2 == '=') return left == right;
+    if (op1 == '>') return left > right;
+    if (op1 == '<') return left < right;
     return 0;
 }
 
-static int split_lines(const char* source, char lines[40][96]) {
+static int eval_condition(const char* cond) {
+    cond = skip_spaces(cond);
+    if (starts_with(cond, "not ")) return !eval_condition(cond + 4);
+
+    int or_pos = find_logic_op(cond, " or ");
+    if (or_pos >= 0) {
+        char left[64];
+        char right[64];
+        copy_range_trim(left, cond, 0, or_pos, 64);
+        copy_range_trim(right, cond, or_pos + 4, text_len(cond), 64);
+        return eval_condition(left) || eval_condition(right);
+    }
+
+    int and_pos = find_logic_op(cond, " and ");
+    if (and_pos >= 0) {
+        char left[64];
+        char right[64];
+        copy_range_trim(left, cond, 0, and_pos, 64);
+        copy_range_trim(right, cond, and_pos + 5, text_len(cond), 64);
+        return eval_condition(left) && eval_condition(right);
+    }
+
+    return eval_simple_condition(cond);
+}
+
+static int split_lines(const char* source, char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN]) {
     int line = 0;
     int col = 0;
-    for (int i = 0; source[i] && line < 40; i++) {
+    for (int i = 0; source[i] && line < NOVAC_MAX_LINES; i++) {
         if (source[i] == '\r') continue;
         if (source[i] == '\n') {
             lines[line][col] = 0;
             line++;
             col = 0;
-        } else if (col < 95) {
+        } else if (source[i] == '}' && col < NOVAC_LINE_LEN - 1) {
+            lines[line][col++] = source[i];
+            lines[line][col] = 0;
+            line++;
+            col = 0;
+            while (source[i + 1] == ' ' || source[i + 1] == '\t') i++;
+        } else if (col < NOVAC_LINE_LEN - 1) {
             lines[line][col++] = source[i];
         }
     }
-    if (line < 40 && col > 0) {
+    if (line < NOVAC_MAX_LINES && col > 0) {
         lines[line][col] = 0;
         line++;
     }
     return line;
 }
 
-static int find_block_end(char lines[40][96], int start, int end) {
+static int find_block_end(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int start, int end) {
     int depth = 0;
     for (int i = start; i < end; i++) {
         const char* line = lines[i];
@@ -317,7 +437,7 @@ static int find_block_end(char lines[40][96], int start, int end) {
     return -1;
 }
 
-static int run_lines(char lines[40][96], int start, int end);
+static int run_lines(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int start, int end);
 
 static int run_print(const char* line) {
     const char* p = skip_spaces(line + 14);
@@ -351,6 +471,36 @@ static int run_var(const char* line) {
     NovaCValue value = eval_value(line + 1, &ok);
     if (!ok) return 0;
     return set_var(name, value);
+}
+
+static int run_assign(const char* line) {
+    char name[24];
+    int name_len = copy_name(name, line, 24);
+    if (name_len <= 0) return 0;
+    line = skip_spaces(line + name_len);
+    if (*line != '=' || line[1] == '=') return 0;
+    int ok = 0;
+    NovaCValue value = eval_value(line + 1, &ok);
+    if (!ok) return 0;
+    return set_var(name, value);
+}
+
+static int run_theme(const char* line) {
+    const char* p = skip_spaces(line + 5);
+    if (*p != '(') return 0;
+    p++;
+    char expr[64];
+    int out = 0;
+    while (*p && *p != ')' && out < 63) expr[out++] = *p++;
+    expr[out] = 0;
+
+    int ok = 0;
+    int theme = eval_number(expr, &ok);
+    if (!ok) return 0;
+    desktop_set_theme(theme);
+    vga_write("[NovaC] Theme changed to ");
+    vga_writeln(desktop_theme_name());
+    return 1;
 }
 
 static int run_input(const char* line) {
@@ -394,24 +544,48 @@ static int run_input(const char* line) {
     return set_var(name, make_string(buffer));
 }
 
-static int run_if(char lines[40][96], int* index, int end) {
+static int skip_if_chain(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int pos, int end) {
+    while (pos < end) {
+        const char* line = skip_spaces(lines[pos]);
+        if (starts_with(line, "elif ") || starts_with(line, ">> func << else")) {
+            int branch_end = find_block_end(lines, pos, end);
+            if (branch_end < 0) return pos;
+            pos = branch_end + 1;
+        } else {
+            break;
+        }
+    }
+    return pos - 1;
+}
+
+static int run_if(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int* index, int end) {
     int block_end = find_block_end(lines, *index, end);
     if (block_end < 0) return 0;
 
     const char* cond = skip_spaces(lines[*index] + text_len("<< ! >func> if"));
-    int true_branch = eval_condition(cond);
-    if (true_branch) {
+    if (eval_condition(cond)) {
         if (!run_lines(lines, *index + 1, block_end)) return 0;
-        if (block_end + 1 < end && starts_with(skip_spaces(lines[block_end + 1]), ">> func << else")) {
-            int else_end = find_block_end(lines, block_end + 1, end);
-            if (else_end < 0) return 0;
-            *index = else_end;
+        *index = skip_if_chain(lines, block_end + 1, end);
+        return 1;
+    }
+
+    int pos = block_end + 1;
+    while (pos < end && starts_with(skip_spaces(lines[pos]), "elif ")) {
+        int elif_end = find_block_end(lines, pos, end);
+        if (elif_end < 0) return 0;
+        const char* elif_cond = skip_spaces(lines[pos] + text_len("elif"));
+        if (eval_condition(elif_cond)) {
+            if (!run_lines(lines, pos + 1, elif_end)) return 0;
+            *index = skip_if_chain(lines, elif_end + 1, end);
             return 1;
         }
-    } else if (block_end + 1 < end && starts_with(skip_spaces(lines[block_end + 1]), ">> func << else")) {
-        int else_end = find_block_end(lines, block_end + 1, end);
+        pos = elif_end + 1;
+    }
+
+    if (pos < end && starts_with(skip_spaces(lines[pos]), ">> func << else")) {
+        int else_end = find_block_end(lines, pos, end);
         if (else_end < 0) return 0;
-        if (!run_lines(lines, block_end + 2, else_end)) return 0;
+        if (!run_lines(lines, pos + 1, else_end)) return 0;
         *index = else_end;
         return 1;
     }
@@ -420,7 +594,33 @@ static int run_if(char lines[40][96], int* index, int end) {
     return 1;
 }
 
-static int run_while(char lines[40][96], int* index, int end) {
+static int run_for(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int* index, int end) {
+    int block_end = find_block_end(lines, *index, end);
+    if (block_end < 0) return 0;
+
+    const char* p = skip_spaces(lines[*index] + text_len("int < for >"));
+    char name[24];
+    int name_len = copy_name(name, p, 24);
+    if (name_len <= 0) return 0;
+    p = skip_spaces(p + name_len);
+    if (!starts_with(p, "in ")) return 0;
+    p = skip_spaces(p + 3);
+
+    int ok = 0;
+    int count = eval_number(p, &ok);
+    if (!ok || count < 0) return 0;
+    if (count > 128) count = 128;
+
+    for (int i = 0; i < count; i++) {
+        set_var(name, make_number(i));
+        if (!run_lines(lines, *index + 1, block_end)) return 0;
+    }
+
+    *index = block_end;
+    return 1;
+}
+
+static int run_while(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int* index, int end) {
     int block_end = find_block_end(lines, *index, end);
     if (block_end < 0) return 0;
 
@@ -439,25 +639,51 @@ static int run_while(char lines[40][96], int* index, int end) {
     return 1;
 }
 
-static int run_lines(char lines[40][96], int start, int end) {
+static int run_lines(char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN], int start, int end) {
     for (int i = start; i < end; i++) {
         const char* line = skip_spaces(lines[i]);
-        if (!line[0] || str_eq(line, "}") || starts_with(line, "//")) continue;
+        if (!line[0] || str_eq(line, "}") || starts_with(line, "//") || starts_with(line, "#")) continue;
         if (starts_with(line, "var ")) {
-            if (!run_var(line)) return 0;
+            if (!run_var(line)) {
+                novac_report_error(i + 1, "invalid variable declaration", line);
+                return 0;
+            }
         } else if (starts_with(line, "input")) {
-            if (!run_input(line)) return 0;
+            if (!run_input(line)) {
+                novac_report_error(i + 1, "invalid input syntax", line);
+                return 0;
+            }
         } else if (starts_with(line, "int << func >>")) {
-            if (!run_print(line)) return 0;
+            if (!run_print(line)) {
+                novac_report_error(i + 1, "invalid print syntax or expression", line);
+                return 0;
+            }
+        } else if (starts_with(line, "theme")) {
+            if (!run_theme(line)) {
+                novac_report_error(i + 1, "invalid theme syntax, use theme(0..3)", line);
+                return 0;
+            }
         } else if (starts_with(line, "<< ! >func> if")) {
-            if (!run_if(lines, &i, end)) return 0;
+            if (!run_if(lines, &i, end)) {
+                novac_report_error(i + 1, "invalid if/elif/else block", line);
+                return 0;
+            }
         } else if (starts_with(line, "<<While>>! <on>")) {
-            if (!run_while(lines, &i, end)) return 0;
-        } else if (starts_with(line, ">> func << else")) {
+            if (!run_while(lines, &i, end)) {
+                novac_report_error(i + 1, "invalid while block", line);
+                return 0;
+            }
+        } else if (starts_with(line, "int < for >")) {
+            if (!run_for(lines, &i, end)) {
+                novac_report_error(i + 1, "invalid for block", line);
+                return 0;
+            }
+        } else if (starts_with(line, "elif ") || starts_with(line, ">> func << else")) {
+            continue;
+        } else if (run_assign(line)) {
             continue;
         } else {
-            vga_write("[NovaC] Unknown line: ");
-            vga_writeln(line);
+            novac_report_error(i + 1, "unknown instruction", line);
             return 0;
         }
     }
@@ -475,10 +701,14 @@ void novac_help(void) {
     vga_writeln("Official syntax now:");
     vga_writeln("  var name = \"text\"");
     vga_writeln("  var n = 2 + 3");
+    vga_writeln("  n = n + 1");
     vga_writeln("  input(name)");
+    vga_writeln("  theme(0..3) changes desktop theme");
     vga_writeln("  int << func >>(name)");
-    vga_writeln("  << ! >func> if n > 2 { ... } >> func << else { ... }");
+    vga_writeln("  << ! >func> if n >= 2 { ... } elif n != 0 { ... } >> func << else { ... }");
     vga_writeln("  <<While>>! <on> n < 5 { ... }");
+    vga_writeln("  int < for > i in 5 { ... }");
+    vga_writeln("  Conditions: == != > < >= <= and or not");
 }
 
 int novac_run_source(const char* source) {
@@ -489,7 +719,8 @@ int novac_run_source(const char* source) {
     }
 
     clear_vars();
-    char lines[40][96];
+    novac_error_reported = 0;
+    char lines[NOVAC_MAX_LINES][NOVAC_LINE_LEN];
     int count = split_lines(source, lines);
     return run_lines(lines, 0, count);
 }

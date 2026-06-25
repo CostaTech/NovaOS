@@ -134,6 +134,9 @@ static void print_help_fs() {
     help_line("edit <name>", "open a one-line editor");
     help_line("rename <old> <new>", "rename a file or folder");
     help_line("rm <name>", "remove a file or empty folder");
+    help_line("formatfs", "prepare the NovaFS disk area after confirmation");
+    help_line("savefs", "save RAM files to the NovaFS disk area");
+    help_line("loadfs", "load RAM files from the NovaFS disk area");
 }
 
 static void print_help_lang() {
@@ -160,10 +163,13 @@ static void print_help_apps() {
     vga_writeln("Desktop apps");
     help_line("mouse click", "open desktop icons from the dock");
     help_line("apps", "list official NovaC apps");
+    help_line("cd games", "enter NovaC games folder");
+    help_line("runNC nova_quest.nc", "play the text adventure");
     help_line("cd apps", "enter the official apps folder");
     help_line("runNC calculator.nc", "open calculator from /apps");
     help_line("runNC settings.nc", "open settings from /apps");
     help_line("runNC documentation.nc", "open documentation from /apps");
+    help_line("runNC syntax_test.nc", "test NovaC syntax support");
     help_line("desktop", "return from Terminal to Desktop");
 }
 
@@ -280,10 +286,73 @@ static void command_create(const char* args) {
 }
 
 
-static int text_len_local(const char* text) {
+
+static void editor_clear_body(void) {
+    for (int y = 5; y < 21; y++) {
+        vga_write_at(0, y, "                                                                                ", 0x0F);
+    }
+}
+
+static void editor_draw_line_number(int y) {
+    char n[4];
+    int value = y + 1;
+    n[0] = (char)('0' + (value / 10));
+    n[1] = (char)('0' + (value % 10));
+    n[2] = 0;
+    vga_write_at(1, 5 + y, n, 0x08);
+    vga_write_at(4, 5 + y, "|", 0x08);
+}
+
+static void editor_draw(const char* name, char rows[12][71], int cursor_x, int cursor_y) {
+    vga_clear(0x0F);
+    vga_write_at(2, 1, "NovaEdit", 0x0E);
+    vga_write_at(13, 1, name, 0x0B);
+    vga_write_at(2, 2, "Arrows move | ENTER new line | BACKSPACE delete | TAB save | ESC cancel", 0x0B);
+    vga_write_at(2, 3, "----------------------------------------------------------------------", 0x08);
+    editor_clear_body();
+    for (int y = 0; y < 12; y++) {
+        editor_draw_line_number(y);
+        vga_write_at(6, 5 + y, rows[y], 0x0F);
+    }
+    vga_write_at(6 + cursor_x, 5 + cursor_y, "_", 0x4F);
+}
+
+static void editor_import_text(char rows[12][71], const char* text) {
+    for (int y = 0; y < 12; y++) {
+        for (int x = 0; x < 71; x++) rows[y][x] = 0;
+    }
+
+    int x = 0;
+    int y = 0;
+    for (int i = 0; text && text[i] && y < 12; i++) {
+        char c = text[i];
+        if (c == '\n') {
+            y++;
+            x = 0;
+        } else if (c >= 32 && c <= 126 && x < 70) {
+            rows[y][x++] = c;
+            rows[y][x] = 0;
+        }
+    }
+}
+
+static int row_len(char row[73]) {
     int n = 0;
-    while (text && text[n]) n++;
+    while (n < 70 && row[n]) n++;
     return n;
+}
+
+static void editor_export_text(char rows[12][71], char* out, int max) {
+    int pos = 0;
+    int last = 11;
+    while (last > 0 && row_len(rows[last]) == 0) last--;
+
+    for (int y = 0; y <= last && pos < max - 1; y++) {
+        int len = row_len(rows[y]);
+        for (int x = 0; x < len && pos < max - 1; x++) out[pos++] = rows[y][x];
+        if (y < last && pos < max - 1) out[pos++] = '\n';
+    }
+    out[pos] = 0;
 }
 
 static void command_edit(const char* args) {
@@ -302,18 +371,11 @@ static void command_edit(const char* args) {
         old_text = "";
     }
 
-    char buffer[192];
-    copy_text(buffer, old_text, 192);
-    int len = text_len_local(buffer);
-
-    vga_clear(0x0F);
-    vga_write_at(2, 1, "NovaEdit", 0x0E);
-    vga_write_at(2, 2, "ENTER saves. ESC cancels. BACKSPACE deletes.", 0x0B);
-    vga_write_at(2, 4, "File:", 0x0A);
-    vga_write_at(8, 4, name, 0x0F);
-    vga_write_at(2, 6, "Text:", 0x0A);
-    vga_set_color(0x0F);
-    vga_write_at(2, 8, buffer, 0x0F);
+    char rows[12][71];
+    editor_import_text(rows, old_text);
+    int cursor_x = row_len(rows[0]);
+    int cursor_y = 0;
+    editor_draw(name, rows, cursor_x, cursor_y);
 
     for (;;) {
         char c = keyboard_read_char();
@@ -323,29 +385,100 @@ static void command_edit(const char* args) {
             prompt();
             return;
         }
-        if (c == '\n') {
-            ramfs_write_file(name, buffer);
+        if (c == NOVA_KEY_UP) {
+            if (cursor_y > 0) cursor_y--;
+            int len = row_len(rows[cursor_y]);
+            if (cursor_x > len) cursor_x = len;
+        } else if (c == NOVA_KEY_DOWN) {
+            if (cursor_y < 11) cursor_y++;
+            int len = row_len(rows[cursor_y]);
+            if (cursor_x > len) cursor_x = len;
+        } else if (c == NOVA_KEY_LEFT) {
+            if (cursor_x > 0) cursor_x--;
+            else if (cursor_y > 0) {
+                cursor_y--;
+                cursor_x = row_len(rows[cursor_y]);
+            }
+        } else if (c == NOVA_KEY_RIGHT) {
+            int len = row_len(rows[cursor_y]);
+            if (cursor_x < len) cursor_x++;
+            else if (cursor_y < 11) {
+                cursor_y++;
+                cursor_x = 0;
+            }
+        } else if (c == '\n') {
+            if (cursor_y < 11) {
+                cursor_y++;
+                cursor_x = 0;
+            }
+        } else if (c == '\b') {
+            if (cursor_x > 0) {
+                int len = row_len(rows[cursor_y]);
+                for (int i = cursor_x - 1; i < len; i++) rows[cursor_y][i] = rows[cursor_y][i + 1];
+                cursor_x--;
+            } else if (cursor_y > 0) {
+                cursor_y--;
+                cursor_x = row_len(rows[cursor_y]);
+            }
+        } else if (c == 0) {
+            // ignore
+        } else if (c >= 32 && c <= 126) {
+            // F2 arrives as '<' on some minimal layouts? No: keep printable text only.
+            int len = row_len(rows[cursor_y]);
+            if (len < 70) {
+                for (int i = len; i >= cursor_x; i--) rows[cursor_y][i + 1] = rows[cursor_y][i];
+                rows[cursor_y][cursor_x] = c;
+                cursor_x++;
+            }
+        }
+
+        if (c == NOVA_KEY_LEFT || c == NOVA_KEY_RIGHT || c == NOVA_KEY_UP || c == NOVA_KEY_DOWN ||
+            c == '\n' || c == '\b' || (c >= 32 && c <= 126)) {
+            editor_draw(name, rows, cursor_x, cursor_y);
+        }
+
+        // Ctrl+S is not available yet, so use TAB as save in this small editor.
+        if (c == '\t') {
+            char buffer[1024];
+            editor_export_text(rows, buffer, 1024);
             terminal_screen();
-            vga_writeln("File saved.");
+            if (ramfs_write_file(name, buffer)) vga_writeln("File saved.");
+            else vga_writeln("Cannot save. This is a protected system file.");
             prompt();
             return;
-        }
-        if (c == '\b') {
-            if (len > 0) {
-                len--;
-                buffer[len] = 0;
-                vga_putc('\b');
-            }
-        } else if (c >= 32 && c <= 126) {
-            if (len < 191) {
-                buffer[len++] = c;
-                buffer[len] = 0;
-                vga_putc(c);
-            }
         }
     }
 }
 
+
+static void command_formatfs() {
+    vga_set_color(0x0E);
+    vga_writeln("Format NovaFS storage area?");
+    vga_writeln("This only uses the NovaFS reserved area, but test in QEMU first.");
+    vga_writeln("Press Y to continue or any other key to cancel.");
+    vga_set_color(0x0F);
+    char c = keyboard_read_char();
+    if (c != 'y' && c != 'Y') {
+        vga_writeln("Format cancelled.");
+        return;
+    }
+    if (!storage_format_novafs()) {
+        vga_writeln("Format failed. Storage not ready or not writable.");
+        return;
+    }
+    if (ramfs_save_to_storage()) vga_writeln("NovaFS formatted and current files saved.");
+    else vga_writeln("Format done, but save failed.");
+}
+
+static void command_savefs() {
+    if (ramfs_save_to_storage()) vga_writeln("NovaFS saved to disk.");
+    else vga_writeln("Save failed. Run formatfs first or check storage.");
+}
+
+static void command_loadfs() {
+    if (ramfs_load_from_storage()) vga_writeln("NovaFS loaded from disk.");
+    else vga_writeln("Load failed. No NovaFS image found or storage not ready.");
+}
 
 static void command_lnpinfo(const char* args) {
     const char* name = skip_spaces(args);
@@ -470,8 +603,8 @@ static void run_command(const char* cmd) {
         vga_writeln("Built with Assembly, C and C++.");
     } else if (streq(cmd, "storage")) {
         vga_writeln(storage_status_text());
-        if (storage_ready()) vga_writeln("Next phase: controlled sector read/write driver.");
-        else vga_writeln("NovaOS will keep writes disabled until a safe disk target exists.");
+        if (storage_ready()) vga_writeln("Use formatfs, savefs and loadfs for controlled persistence.");
+        else vga_writeln("No writable disk bus detected yet.");
     } else if (streq(cmd, "clear")) {
         terminal_screen();
         return;
@@ -501,6 +634,12 @@ static void run_command(const char* cmd) {
         else vga_writeln("File not found.");
     } else if (starts_with(cmd, "lnpinfo ")) {
         command_lnpinfo(cmd + 8);
+    } else if (streq(cmd, "formatfs")) {
+        command_formatfs();
+    } else if (streq(cmd, "savefs")) {
+        command_savefs();
+    } else if (streq(cmd, "loadfs")) {
+        command_loadfs();
     } else if (starts_with(cmd, "edit ")) {
         command_edit(cmd + 5);
         return;

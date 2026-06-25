@@ -18,6 +18,7 @@ typedef int i32;
 void outb(u16 port, u8 value);
 void outw(u16 port, u16 value);
 u8 inb(u16 port);
+u16 inw(u16 port);
 
 void vga_clear(u8 color);
 void vga_set_color(u8 color);
@@ -47,6 +48,9 @@ void framebuffer_demo(void);
 void storage_init(void);
 int storage_ready(void);
 const char* storage_status_text(void);
+int storage_format_novafs(void);
+int storage_read_novafs(u8* buffer, int bytes);
+int storage_write_novafs(const u8* buffer, int bytes);
 
 void session_set_username(const char* name);
 const char* session_username(void);
@@ -70,11 +74,16 @@ int ramfs_entry_is_dir(int id);
 int ramfs_child_count(void);
 const char* ramfs_child_name(int index);
 int ramfs_child_is_dir(int index);
+int ramfs_save_to_storage(void);
+int ramfs_load_from_storage(void);
 
 void kernel_panic(const char* message, const char* file, int line);
 void interrupts_init(void);
 void system_reboot(void);
 void system_shutdown(void);
+void desktop_set_theme(int theme);
+int desktop_get_theme(void);
+const char* desktop_theme_name(void);
 
 void novac_init(void);
 void novac_help(void);

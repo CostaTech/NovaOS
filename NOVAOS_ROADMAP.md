@@ -173,6 +173,9 @@ Da fare:
 - desktop piu' bello
 - supporto immagini Nova Picture con estensione `.lnp`
 - viewer immagini `.lnp` dentro il desktop
+- comando shell `view image.lnp` per aprire immagini
+- app desktop Images/Gallery per vedere immagini salvate in `/images`
+- libreria futura NovaC OS per mostrare immagini: `image_open()` e `image_draw()`
 
 Stabile quando:
 
@@ -238,6 +241,7 @@ App base:
 - Text Editor
 - System Info
 - App Launcher
+- Images/Gallery
 
 ## Fase 5.5: Glow up desktop
 
@@ -253,6 +257,7 @@ Da fare:
 - status bar piu' chiara
 - tema Nova/galassia piu' riconoscibile
 - NovaC Runner
+- anteprime immagini `.lnp` nel file manager
 
 Desktop:
 

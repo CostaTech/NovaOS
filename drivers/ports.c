@@ -13,3 +13,10 @@ u8 inb(u16 port) {
     __asm__ volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
     return value;
 }
+
+
+u16 inw(u16 port) {
+    u16 value;
+    __asm__ volatile ("inw %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
