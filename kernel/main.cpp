@@ -94,18 +94,17 @@ extern "C" void kernel_main(u32 magic, u32 mbi_addr)
     {
         NOVA_PANIC("Invalid Multiboot magic. Bootloader did not load NovaOS correctly.");
     }
-
     interrupts_init();
+    pokey_init();        // ← dopo interrupts
+    pokey_boot_jingle(); // ← jingle di boot
     framebuffer_init(magic, mbi_addr);
     keyboard_init();
     mouse_init();
     storage_init();
     ramfs_init();
     novac_init();
-
     login_screen();
     desktop_loop();
-
     for (;;)
         __asm__ volatile("hlt");
 }

@@ -88,7 +88,30 @@ const char* desktop_theme_name(void);
 void novac_init(void);
 void novac_help(void);
 int novac_run_source(const char* source);
+
 #define NOVA_PANIC(message) kernel_panic((message), __FILE__, __LINE__)
+
+// ── POKEY Audio Emulator ───────────────────────────────────
+void pokey_init(void);
+void pokey_set_audf(int channel, u8 value);
+void pokey_set_audc(int channel, u8 value);
+void pokey_set_audctl(u8 value);
+void pokey_set_skctl(u8 value);
+void pokey_stimer(void);
+u8   pokey_get_volume(int channel);
+u32  pokey_get_frequency(int channel);
+u8   pokey_freq_to_audf(u32 freq_hz, int use_179mhz);
+void pokey_play(u32 duration_ms);
+void pokey_stop_all(void);
+void pokey_play_note(u32 freq, u32 ms, u8 distortion, u8 volume);
+void pokey_boot_jingle(void);
+void pokey_beep(void);
+void pokey_error_sound(void);
+void pokey_laser_sound(void);
+void pokey_explosion_sound(void);
+void pokey_powerup_sound(void);
+void pokey_missile_command_theme(void);
+void pokey_status(void);
 
 #ifdef __cplusplus
 }
