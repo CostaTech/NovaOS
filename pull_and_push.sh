@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "=== SSCK Sync ==="
+echo "=== GitHub Sync ==="
 
 cd "$(dirname "$0")"
 
