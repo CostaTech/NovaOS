@@ -320,17 +320,10 @@ void ramfs_init(void) {
             "int << func >>(\"Official NovaC syntax is special\")\n"
             "int << func >>(\"Use cd apps, runNC name.nc, newnc file.nc\")\n"
             "int << func >>(\"Default files are protected\")");
-        make_system_entry(apps, "paint.nc", 0,
-            "int << func >>(\"NovaPaint\")\n"
-            "int << func >>(\"[ NOVA ART ]\")\"\n"
-            "int << func >>(\"Draw will come soon.\")");
         make_system_entry(apps, "notes.nc", 0,
             "int << func >>(\"Nova Notes\")\n"
             "int << func >>(\"Use edit filename.txt from Terminal to write notes.\")\n"
             "int << func >>(\"User files live in /home.\")");
-        make_system_entry(apps, "hello.nc", 0,
-            "var msg = \"Hello from NovaC inside NovaOS\"\n"
-            "int << func >>(msg)");
         make_system_entry(apps, "sysinfo.nc", 0,
             "int << func >>(\"NovaSys Info\")\n"
             "int << func >>(\"Kernel: NovaOS C/C++ core\")\n"

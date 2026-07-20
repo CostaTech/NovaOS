@@ -50,7 +50,7 @@ extern "C" int desktop_get_theme(void) {
 extern "C" const char* desktop_theme_name(void) {
     return theme_name();
 }
-static const char dock_actions[10] = {'f', 't', 's', 'c', 'n', 'p', 'd', 'o', 'h', 'm'};
+static const char dock_actions[8] = {'f', 't', 's', 'c', 'n', 'd', 'o', 'm'};
 
 static int text_len(const char* text) {
     int n = 0;
@@ -177,11 +177,9 @@ void desktop_draw() {
     draw_dock_icon(3, 6, selected_app == 2, "S", "Settings", 0x1D);
     draw_dock_icon(3, 7, selected_app == 3, "C", "Calc", 0x1E);
     draw_dock_icon(3, 8, selected_app == 4, "N", "Notes", 0x1B);
-    draw_dock_icon(3, 9, selected_app == 5, "P", "Paint", 0x1D);
-    draw_dock_icon(3, 10, selected_app == 6, "D", "Docs", 0x1E);
-    draw_dock_icon(3, 11, selected_app == 7, "O", "Tour", 0x1A);
-    draw_dock_icon(3, 12, selected_app == 8, "H", "Hello", 0x1F);
-    draw_dock_icon(3, 13, selected_app == 9, "M", "Games", 0x1D);
+    draw_dock_icon(3, 9, selected_app == 5, "D", "Docs", 0x1E);
+    draw_dock_icon(3, 10, selected_app == 6, "O", "Tour", 0x1A);
+    draw_dock_icon(3, 11, selected_app == 7, "M", "Games", 0x1D);
 
     draw_calendar_panel();
     draw_note_window();
@@ -405,17 +403,11 @@ static void open_desktop_action(char action) {
     } else if (action == 'n' || action == 'N') {
         run_novac_app("notes.nc");
         desktop_redraw();
-    } else if (action == 'p' || action == 'P') {
-        run_novac_app("paint.nc");
-        desktop_redraw();
     } else if (action == 'd' || action == 'D') {
         run_novac_app("documentation.nc");
         desktop_redraw();
     } else if (action == 'o' || action == 'O') {
         run_novac_app("tour.nc");
-        desktop_redraw();
-    } else if (action == 'h' || action == 'H') {
-        run_novac_app("hello.nc");
         desktop_redraw();
     } else if (action == 'x' || action == 'X') {
         power_menu();
@@ -487,7 +479,7 @@ void desktop_loop() {
 
         if (key == NOVA_KEY_UP || key == 'w' || key == 'W') {
             selected_app--;
-            if (selected_app < 0) selected_app = 9;
+            if (selected_app < 0) selected_app = 7;
             desktop_redraw();
             last_x = mouse_x();
             last_y = mouse_y();
@@ -495,7 +487,7 @@ void desktop_loop() {
             idle_ticks = 0;
         } else if (key == NOVA_KEY_DOWN || key == 's' || key == 'S') {
             selected_app++;
-            if (selected_app > 9) selected_app = 0;
+            if (selected_app > 7) selected_app = 0;
             desktop_redraw();
             last_x = mouse_x();
             last_y = mouse_y();
