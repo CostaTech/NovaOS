@@ -333,10 +333,6 @@ void ramfs_init(void) {
             "int << func >>(\"Use input(name) for keyboard input\")\n"
             "int << func >>(\"Use int << func >>(name) to print\")\n"
             "int << func >>(\"Use the special if and while syntax\")");
-        make_system_entry(apps, "theme.nc", 0,
-            "int << func >>(\"Nova Theme\")\n"
-            "int << func >>(\"Blue space shell, yellow highlights, cyan links.\")\n"
-            "int << func >>(\"Next step: real theme settings.\")");
         make_system_entry(apps, "calculator.nc", 0,
             "int << func >>(\"NovaCalc\")\n"
             "int << func >>(\"First number:\")\n"
