@@ -265,12 +265,10 @@ void ramfs_init(void) {
     str_copy(entries[0].name, "/", MAX_NAME_LEN);
     cwd = 0;
 
-    make_system_entry(0, "system", 1, "");
     make_system_entry(0, "apps", 1, "");
     make_system_entry(0, "home", 1, "");
     make_system_entry(0, "docs", 1, "");
     make_system_entry(0, "games", 1, "");
-    make_system_entry(0, "images", 1, "");
     make_system_entry(0, "readme.txt", 0,
         "NovaOS RAM filesystem v2 is active. Type help in Terminal.");
 
@@ -329,53 +327,16 @@ void ramfs_init(void) {
             "int << func >>(\"Kernel: NovaOS C/C++ core\")\n"
             "int << func >>(\"Apps: NovaC protected files\")\n"
             "int << func >>(\"Desktop: mouse driven VGA mode\")");
-        make_system_entry(apps, "shellhelp.nc", 0,
-            "int << func >>(\"Shell Quick Help\")\n"
-            "int << func >>(\"apps = list official apps\")\n"
-            "int << func >>(\"runNC calculator.nc = open calculator\")\n"
-            "int << func >>(\"newnc myapp.nc = create app file\")\n"
-            "int << func >>(\"runNC file.nc = run current file\")");
         make_system_entry(apps, "devguide.nc", 0,
             "int << func >>(\"Nova Dev Guide\")\n"
             "int << func >>(\"Use var for data\")\n"
             "int << func >>(\"Use input(name) for keyboard input\")\n"
             "int << func >>(\"Use int << func >>(name) to print\")\n"
             "int << func >>(\"Use the special if and while syntax\")");
-        make_system_entry(apps, "mouseinfo.nc", 0,
-            "int << func >>(\"Mouse Info\")\n"
-            "int << func >>(\"NovaOS uses a PS/2 polling mouse driver.\")\n"
-            "int << func >>(\"The driver is filtered for real hardware tests.\")");
-        make_system_entry(apps, "storageinfo.nc", 0,
-            "int << func >>(\"Storage Info\")\n"
-            "int << func >>(\"NovaFS v2 uses multi-block architecture.\")\n"
-            "int << func >>(\"Official apps are protected and restored at boot.\")");
         make_system_entry(apps, "theme.nc", 0,
             "int << func >>(\"Nova Theme\")\n"
             "int << func >>(\"Blue space shell, yellow highlights, cyan links.\")\n"
             "int << func >>(\"Next step: real theme settings.\")");
-        make_system_entry(apps, "clock.nc", 0,
-            "int << func >>(\"Nova Clock\")\n"
-            "int << func >>(\"RTC driver will arrive later.\")\n"
-            "int << func >>(\"For now this is a NovaC placeholder app.\")");
-        make_system_entry(apps, "syntax_test.nc", 0,
-            "int << func >>(\"NovaC Syntax Test\")\n"
-            "var x = 0\n"
-            "x = x + 1\n"
-            "int << func >>(x)\n"
-            "<< ! >func> if x >= 2 {\n"
-            "int << func >>(\"if branch\")\n"
-            "} elif x != 0 and not x == 3 {\n"
-            "int << func >>(\"elif branch\")\n"
-            "} >> func << else {\n"
-            "int << func >>(\"else branch\")\n"
-            "}\n"
-            "<<While>>! <on> x < 3 {\n"
-            "int << func >>(x)\n"
-            "x = x + 1\n"
-            "}\n"
-            "int < for > i in 3 {\n"
-            "int << func >>(i)\n"
-            "}");
         make_system_entry(apps, "calculator.nc", 0,
             "int << func >>(\"NovaCalc\")\n"
             "int << func >>(\"First number:\")\n"
