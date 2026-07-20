@@ -144,3 +144,18 @@ extern "C" void interrupts_init(void) {
     idt_ptr.base = (u32)&idt;
     __asm__ volatile ("lidt %0" : : "m"(idt_ptr));
 }
+
+/* ── System tick counter ──────────────────────────────────────────────
+ * Incrementato dall'IRQ0 (PIT timer) se configurato.
+ * Usato da ramfs per timestamp created/modified.
+ * Per ora è un semplice contatore manuale — basta per i timestamp. */
+
+static volatile unsigned int system_tick_counter = 0;
+
+extern "C" unsigned int get_system_tick(void) {
+    return system_tick_counter;
+}
+
+extern "C" void system_tick_increment(void) {
+    system_tick_counter++;
+}

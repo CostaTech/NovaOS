@@ -17,10 +17,14 @@ KERNEL := $(BUILD)/NovaOS.kernel
 ISO := NovaOS.iso
 
 ASM_OBJS := $(BUILD)/entry.o $(BUILD)/interrupts_asm.o
+
 C_OBJS := $(BUILD)/vga.o $(BUILD)/ports.o $(BUILD)/keyboard.o $(BUILD)/mouse.o \
-          $(BUILD)/framebuffer.o $(BUILD)/storage.o $(BUILD)/pokey.o
+          $(BUILD)/framebuffer.o $(BUILD)/storage.o $(BUILD)/pokey.o \
+          $(BUILD)/ramfs.o
+
 CPP_OBJS := $(BUILD)/main.o $(BUILD)/panic.o $(BUILD)/power.o $(BUILD)/interrupts.o \
-            $(BUILD)/desktop.o $(BUILD)/shell.o $(BUILD)/ramfs.o $(BUILD)/novac.o
+            $(BUILD)/desktop.o $(BUILD)/shell.o $(BUILD)/novac.o
+
 OBJS := $(ASM_OBJS) $(C_OBJS) $(CPP_OBJS)
 
 .PHONY: all iso run clean tree
@@ -30,30 +34,38 @@ all: $(KERNEL)
 $(BUILD):
 	mkdir -p $(BUILD)
 
+# Assembly
 $(BUILD)/entry.o: boot/entry.asm | $(BUILD)
 	$(NASM) -f elf32 $< -o $@
 
 $(BUILD)/interrupts_asm.o: boot/interrupts.asm | $(BUILD)
 	$(NASM) -f elf32 $< -o $@
 
+# C — drivers
 $(BUILD)/%.o: drivers/%.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# C — filesystem
+$(BUILD)/ramfs.o: fs/ramfs.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# C++ — kernel
 $(BUILD)/%.o: kernel/%.cpp | $(BUILD)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# C++ — graphics
 $(BUILD)/%.o: graphics/%.cpp | $(BUILD)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# C++ — shell
 $(BUILD)/%.o: shell/%.cpp | $(BUILD)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD)/%.o: fs/%.cpp | $(BUILD)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
+# C++ — languages
 $(BUILD)/%.o: languages/novac/%.cpp | $(BUILD)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Kernel link
 $(KERNEL): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
@@ -68,28 +80,6 @@ run: iso
 	qemu-system-i386 -m 256M -cdrom $(ISO) -boot d \
 	    -audiodev pipewire,id=snd0 \
 	    -machine pcspk-audiodev=snd0
-
-clean:
-	rm -rf $(BUILD) $(ISO) $(ISO_DIR)/boot/NovaOS.kernel
-
-tree:
-	find . -maxdepth 3 -type f | sort
-
-$(BUILD)/%.o: languages/novac/%.cpp | $(BUILD)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(KERNEL): $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS)
-
-iso: $(KERNEL)
-	mkdir -p $(ISO_DIR)/boot/grub
-	cp $(KERNEL) $(ISO_DIR)/boot/NovaOS.kernel
-	cp boot/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-	grub-mkrescue --modules="part_msdos part_gpt iso9660 multiboot" -o $(ISO) $(ISO_DIR)
-	@echo "Built $(ISO)"
-
-run: iso
-	qemu-system-i386 -m 256M -cdrom $(ISO) -boot d
 
 clean:
 	rm -rf $(BUILD) $(ISO) $(ISO_DIR)/boot/NovaOS.kernel

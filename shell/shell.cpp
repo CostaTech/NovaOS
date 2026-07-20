@@ -287,69 +287,135 @@ static void command_create(const char* args) {
 
 
 
-static void editor_clear_body(void) {
-    for (int y = 5; y < 21; y++) {
-        vga_write_at(0, y, "                                                                                ", 0x0F);
-    }
+// ── NovaEdit — editor con scroll verticale illimitato ──────
+#define EDITOR_MAX_ROWS  512   // righe massime (praticamente illimitato)
+#define EDITOR_MAX_COLS  74    // caratteri per riga
+#define EDITOR_VIEW_ROWS 16    // righe visibili sullo schermo (righe 5-20)
+#define EDITOR_VIEW_Y    5     // riga VGA dove inizia l'area di testo
+
+static char  ed_rows[EDITOR_MAX_ROWS][EDITOR_MAX_COLS];
+static int   ed_total_rows = 0;  // numero di righe usate
+
+static int ed_row_len(int r) {
+    if (r < 0 || r >= EDITOR_MAX_ROWS) return 0;
+    int n = 0;
+    while (n < EDITOR_MAX_COLS - 1 && ed_rows[r][n]) n++;
+    return n;
 }
 
-static void editor_draw_line_number(int y) {
-    char n[4];
-    int value = y + 1;
-    n[0] = (char)('0' + (value / 10));
-    n[1] = (char)('0' + (value % 10));
-    n[2] = 0;
-    vga_write_at(1, 5 + y, n, 0x08);
-    vga_write_at(4, 5 + y, "|", 0x08);
-}
-
-static void editor_draw(const char* name, char rows[12][71], int cursor_x, int cursor_y) {
+static void ed_draw(const char* name, int cursor_x, int cursor_y, int scroll) {
     vga_clear(0x0F);
+
+    // Header
     vga_write_at(2, 1, "NovaEdit", 0x0E);
-    vga_write_at(13, 1, name, 0x0B);
-    vga_write_at(2, 2, "Arrows move | ENTER new line | BACKSPACE delete | TAB save | ESC cancel", 0x0B);
-    vga_write_at(2, 3, "----------------------------------------------------------------------", 0x08);
-    editor_clear_body();
-    for (int y = 0; y < 12; y++) {
-        editor_draw_line_number(y);
-        vga_write_at(6, 5 + y, rows[y], 0x0F);
+    vga_write_at(12, 1, name, 0x0B);
+
+    // Info riga corrente
+    char info[32];
+    info[0] = 'L'; info[1] = 'n'; info[2] = ' ';
+    int ln = cursor_y + 1;
+    info[3] = (char)('0' + ln / 100 % 10);
+    info[4] = (char)('0' + ln / 10 % 10);
+    info[5] = (char)('0' + ln % 10);
+    info[6] = 0;
+    vga_write_at(60, 1, info, 0x08);
+
+    vga_write_at(2, 2, "Frecce: muovi | INVIO: nuova riga | BACKSPACE: cancella | TAB: salva | ESC: annulla", 0x0B);
+    vga_write_at(0, 3, "--------------------------------------------------------------------------------", 0x08);
+    vga_write_at(0, 4, "  # |                                                                          ", 0x08);
+
+    // Pulisci area testo
+    for (int y = 0; y < EDITOR_VIEW_ROWS; y++) {
+        vga_write_at(0, EDITOR_VIEW_Y + y,
+            "                                                                                ", 0x0F);
     }
-    vga_write_at(6 + cursor_x, 5 + cursor_y, "_", 0x4F);
+
+    // Disegna righe visibili
+    for (int y = 0; y < EDITOR_VIEW_ROWS; y++) {
+        int row = scroll + y;
+        if (row >= ed_total_rows) break;
+
+        // Numero di riga (3 cifre)
+        char n[5];
+        int v = row + 1;
+        n[0] = (char)('0' + v / 100 % 10);
+        n[1] = (char)('0' + v / 10  % 10);
+        n[2] = (char)('0' + v       % 10);
+        n[3] = ' ';
+        n[4] = 0;
+        vga_write_at(0, EDITOR_VIEW_Y + y, n, 0x08);
+        vga_write_at(4, EDITOR_VIEW_Y + y, "|", 0x08);
+
+        // Testo della riga
+        vga_write_at(6, EDITOR_VIEW_Y + y, ed_rows[row], 0x0F);
+    }
+
+    // Cursore
+    int screen_y = cursor_y - scroll;
+    if (screen_y >= 0 && screen_y < EDITOR_VIEW_ROWS) {
+        vga_write_at(6 + cursor_x, EDITOR_VIEW_Y + screen_y, "_", 0x4F);
+    }
+
+    // Footer con stats
+    vga_write_at(0, 23, "--------------------------------------------------------------------------------", 0x08);
+    char stats[80];
+    // Build stats string manualmente
+    stats[0]='R'; stats[1]='i'; stats[2]='g'; stats[3]='h'; stats[4]='e'; stats[5]=':'; stats[6]=' ';
+    int tr = ed_total_rows;
+    stats[7]  = (char)('0' + tr / 100 % 10);
+    stats[8]  = (char)('0' + tr / 10  % 10);
+    stats[9]  = (char)('0' + tr       % 10);
+    stats[10] = ' '; stats[11] = '|'; stats[12] = ' ';
+    stats[13] = 'S'; stats[14] = 'c'; stats[15] = 'r'; stats[16] = ':'; stats[17] = ' ';
+    stats[18] = (char)('0' + scroll / 100 % 10);
+    stats[19] = (char)('0' + scroll / 10  % 10);
+    stats[20] = (char)('0' + scroll       % 10);
+    stats[21] = 0;
+    vga_write_at(2, 24, stats, 0x08);
 }
 
-static void editor_import_text(char rows[12][71], const char* text) {
-    for (int y = 0; y < 12; y++) {
-        for (int x = 0; x < 71; x++) rows[y][x] = 0;
+static void ed_insert_row(int at) {
+    if (ed_total_rows >= EDITOR_MAX_ROWS) return;
+    // Sposta righe in basso
+    for (int i = ed_total_rows; i > at; i--) {
+        for (int j = 0; j < EDITOR_MAX_COLS; j++)
+            ed_rows[i][j] = ed_rows[i-1][j];
     }
+    // Azzera nuova riga
+    for (int j = 0; j < EDITOR_MAX_COLS; j++) ed_rows[at][j] = 0;
+    ed_total_rows++;
+}
 
-    int x = 0;
-    int y = 0;
-    for (int i = 0; text && text[i] && y < 12; i++) {
+static void ed_import(const char* text) {
+    // Azzera tutto
+    for (int r = 0; r < EDITOR_MAX_ROWS; r++)
+        for (int c = 0; c < EDITOR_MAX_COLS; c++)
+            ed_rows[r][c] = 0;
+    ed_total_rows = 1;
+
+    int x = 0, y = 0;
+    for (int i = 0; text && text[i] && y < EDITOR_MAX_ROWS; i++) {
         char c = text[i];
         if (c == '\n') {
             y++;
             x = 0;
-        } else if (c >= 32 && c <= 126 && x < 70) {
-            rows[y][x++] = c;
-            rows[y][x] = 0;
+            if (y >= ed_total_rows) ed_total_rows = y + 1;
+        } else if (c >= 32 && c <= 126 && x < EDITOR_MAX_COLS - 1) {
+            ed_rows[y][x++] = c;
+            ed_rows[y][x]   = 0;
         }
     }
+    if (ed_total_rows < 1) ed_total_rows = 1;
 }
 
-static int row_len(char row[73]) {
-    int n = 0;
-    while (n < 70 && row[n]) n++;
-    return n;
-}
-
-static void editor_export_text(char rows[12][71], char* out, int max) {
-    int pos = 0;
-    int last = 11;
-    while (last > 0 && row_len(rows[last]) == 0) last--;
+static void ed_export(char* out, int max) {
+    int pos  = 0;
+    int last = ed_total_rows - 1;
+    while (last > 0 && ed_row_len(last) == 0) last--;
 
     for (int y = 0; y <= last && pos < max - 1; y++) {
-        int len = row_len(rows[y]);
-        for (int x = 0; x < len && pos < max - 1; x++) out[pos++] = rows[y][x];
+        int len = ed_row_len(y);
+        for (int x = 0; x < len && pos < max - 1; x++) out[pos++] = ed_rows[y][x];
         if (y < last && pos < max - 1) out[pos++] = '\n';
     }
     out[pos] = 0;
@@ -371,82 +437,122 @@ static void command_edit(const char* args) {
         old_text = "";
     }
 
-    char rows[12][71];
-    editor_import_text(rows, old_text);
-    int cursor_x = row_len(rows[0]);
+    ed_import(old_text);
+
+    int cursor_x = ed_row_len(0);
     int cursor_y = 0;
-    editor_draw(name, rows, cursor_x, cursor_y);
+    int scroll   = 0;
+
+    ed_draw(name, cursor_x, cursor_y, scroll);
 
     for (;;) {
         char c = keyboard_read_char();
+
         if (c == 27) {
             terminal_screen();
             vga_writeln("Edit cancelled.");
             prompt();
             return;
         }
+
         if (c == NOVA_KEY_UP) {
-            if (cursor_y > 0) cursor_y--;
-            int len = row_len(rows[cursor_y]);
-            if (cursor_x > len) cursor_x = len;
-        } else if (c == NOVA_KEY_DOWN) {
-            if (cursor_y < 11) cursor_y++;
-            int len = row_len(rows[cursor_y]);
-            if (cursor_x > len) cursor_x = len;
-        } else if (c == NOVA_KEY_LEFT) {
-            if (cursor_x > 0) cursor_x--;
-            else if (cursor_y > 0) {
+            if (cursor_y > 0) {
                 cursor_y--;
-                cursor_x = row_len(rows[cursor_y]);
+                if (cursor_y < scroll) scroll = cursor_y;
+                int len = ed_row_len(cursor_y);
+                if (cursor_x > len) cursor_x = len;
             }
-        } else if (c == NOVA_KEY_RIGHT) {
-            int len = row_len(rows[cursor_y]);
-            if (cursor_x < len) cursor_x++;
-            else if (cursor_y < 11) {
+        } else if (c == NOVA_KEY_DOWN) {
+            if (cursor_y < ed_total_rows - 1) {
                 cursor_y++;
-                cursor_x = 0;
+                if (cursor_y >= scroll + EDITOR_VIEW_ROWS) scroll = cursor_y - EDITOR_VIEW_ROWS + 1;
+                int len = ed_row_len(cursor_y);
+                if (cursor_x > len) cursor_x = len;
             }
-        } else if (c == '\n') {
-            if (cursor_y < 11) {
-                cursor_y++;
-                cursor_x = 0;
-            }
-        } else if (c == '\b') {
+        } else if (c == NOVA_KEY_LEFT) {
             if (cursor_x > 0) {
-                int len = row_len(rows[cursor_y]);
-                for (int i = cursor_x - 1; i < len; i++) rows[cursor_y][i] = rows[cursor_y][i + 1];
                 cursor_x--;
             } else if (cursor_y > 0) {
                 cursor_y--;
-                cursor_x = row_len(rows[cursor_y]);
+                if (cursor_y < scroll) scroll = cursor_y;
+                cursor_x = ed_row_len(cursor_y);
             }
-        } else if (c == 0) {
-            // ignore
-        } else if (c >= 32 && c <= 126) {
-            // F2 arrives as '<' on some minimal layouts? No: keep printable text only.
-            int len = row_len(rows[cursor_y]);
-            if (len < 70) {
-                for (int i = len; i >= cursor_x; i--) rows[cursor_y][i + 1] = rows[cursor_y][i];
-                rows[cursor_y][cursor_x] = c;
+        } else if (c == NOVA_KEY_RIGHT) {
+            int len = ed_row_len(cursor_y);
+            if (cursor_x < len) {
                 cursor_x++;
+            } else if (cursor_y < ed_total_rows - 1) {
+                cursor_y++;
+                if (cursor_y >= scroll + EDITOR_VIEW_ROWS) scroll = cursor_y - EDITOR_VIEW_ROWS + 1;
+                cursor_x = 0;
             }
-        }
-
-        if (c == NOVA_KEY_LEFT || c == NOVA_KEY_RIGHT || c == NOVA_KEY_UP || c == NOVA_KEY_DOWN ||
-            c == '\n' || c == '\b' || (c >= 32 && c <= 126)) {
-            editor_draw(name, rows, cursor_x, cursor_y);
-        }
-
-        // Ctrl+S is not available yet, so use TAB as save in this small editor.
-        if (c == '\t') {
-            char buffer[1024];
-            editor_export_text(rows, buffer, 1024);
+        } else if (c == '\n') {
+            // Nuova riga: spezza la riga corrente al cursore
+            if (ed_total_rows < EDITOR_MAX_ROWS) {
+                int old_len = ed_row_len(cursor_y);
+                // Salva il testo dopo il cursore
+                char rest[EDITOR_MAX_COLS];
+                int ri = 0;
+                for (int i = cursor_x; i <= old_len; i++) rest[ri++] = ed_rows[cursor_y][i];
+                rest[ri] = 0;
+                // Tronca la riga corrente al cursore
+                ed_rows[cursor_y][cursor_x] = 0;
+                // Inserisce nuova riga sotto
+                ed_insert_row(cursor_y + 1);
+                // Copia il resto nella nuova riga
+                for (int i = 0; rest[i]; i++) ed_rows[cursor_y + 1][i] = rest[i];
+                cursor_y++;
+                cursor_x = 0;
+                if (cursor_y >= scroll + EDITOR_VIEW_ROWS) scroll = cursor_y - EDITOR_VIEW_ROWS + 1;
+            }
+        } else if (c == '\b') {
+            if (cursor_x > 0) {
+                // Cancella carattere a sinistra del cursore
+                int len = ed_row_len(cursor_y);
+                for (int i = cursor_x - 1; i < len; i++)
+                    ed_rows[cursor_y][i] = ed_rows[cursor_y][i + 1];
+                ed_rows[cursor_y][len] = 0;
+                cursor_x--;
+            } else if (cursor_y > 0) {
+                // Unisci con la riga precedente
+                int prev_len = ed_row_len(cursor_y - 1);
+                int curr_len = ed_row_len(cursor_y);
+                if (prev_len + curr_len < EDITOR_MAX_COLS - 1) {
+                    for (int i = 0; i < curr_len; i++)
+                        ed_rows[cursor_y - 1][prev_len + i] = ed_rows[cursor_y][i];
+                    ed_rows[cursor_y - 1][prev_len + curr_len] = 0;
+                    // Rimuovi riga corrente
+                    for (int r = cursor_y; r < ed_total_rows - 1; r++)
+                        for (int j = 0; j < EDITOR_MAX_COLS; j++)
+                            ed_rows[r][j] = ed_rows[r + 1][j];
+                    ed_total_rows--;
+                    cursor_y--;
+                    cursor_x = prev_len;
+                    if (cursor_y < scroll) scroll = cursor_y;
+                }
+            }
+        } else if (c == '\t') {
+            // TAB = salva
+            char buffer[4096];
+            ed_export(buffer, 4096);
             terminal_screen();
             if (ramfs_write_file(name, buffer)) vga_writeln("File saved.");
             else vga_writeln("Cannot save. This is a protected system file.");
             prompt();
             return;
+        } else if (c >= 32 && c <= 126) {
+            int len = ed_row_len(cursor_y);
+            if (len < EDITOR_MAX_COLS - 1) {
+                for (int i = len; i >= cursor_x; i--)
+                    ed_rows[cursor_y][i + 1] = ed_rows[cursor_y][i];
+                ed_rows[cursor_y][cursor_x] = c;
+                cursor_x++;
+            }
+        } else if (c == 0) {
+            // ignora
         }
+
+        ed_draw(name, cursor_x, cursor_y, scroll);
     }
 }
 
